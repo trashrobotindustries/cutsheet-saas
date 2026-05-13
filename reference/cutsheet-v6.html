@@ -1,0 +1,3716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CutSheet — Job Estimating & Shop Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b1017;--surf:#131c27;--surf-hi:#1a2535;--surf-top:#1f2d40;
+  --border:#253040;--border-hi:#344560;
+  --steel:#5c8fb5;--steel-dim:#3a6080;
+  --amber:#e8a020;--amber-dim:#9a6c10;
+  --text:#ccd6e0;--muted:#7a8ea4;--dim:#445566;
+  --green:#3cb870;--red:#cc4444;--yellow:#d4b840;
+}
+html,body{height:100%;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);font-size:16px;line-height:1.4}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;background:var(--surf);border-bottom:2px solid var(--steel-dim);height:56px;flex-shrink:0}
+.topbar-logo{padding:0 24px;font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;letter-spacing:2px;color:var(--amber);white-space:nowrap;border-right:1px solid var(--border);height:100%;display:flex;align-items:center;gap:10px}
+.topbar-logo span{color:var(--muted);font-weight:400;font-size:14px;letter-spacing:1px}
+.topbar-tabs{display:flex;height:100%;flex:1}
+.tab-btn{padding:0 28px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;letter-spacing:1px;color:var(--muted);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap;border-right:1px solid var(--border)}
+.tab-btn:hover{color:var(--text);background:var(--surf-hi)}
+.tab-btn.active{color:var(--amber);border-bottom-color:var(--amber);background:var(--surf-hi)}
+.topbar-right{padding:0 20px;margin-left:auto;font-size:13px;color:var(--muted);border-left:1px solid var(--border);height:100%;display:flex;align-items:center;gap:16px;white-space:nowrap}
+.shop-rate{color:var(--steel);font-weight:500}
+.autosave-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);display:inline-block;transition:background .3s}
+.autosave-dot.saved{background:var(--green)}
+
+.screens{flex:1;overflow:hidden;display:flex}
+.screen{display:none;width:100%}
+.screen.active{display:flex;flex:1;min-height:0}
+
+/* LABELS */
+.section-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.section-header{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;color:var(--steel);border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+
+/* INPUTS */
+input,select,textarea{background:var(--surf);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:16px;padding:8px 12px;border-radius:3px;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--steel);background:var(--surf-hi)}
+input[type=number]{text-align:right}
+select option{background:var(--surf-hi)}
+textarea{resize:vertical;min-height:80px}
+label{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:4px}
+
+/* BUTTONS */
+.btn{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:1px;padding:10px 20px;border:none;border-radius:3px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--steel);color:#fff}.btn-primary:hover{background:#7aadd0}
+.btn-amber{background:var(--amber);color:#000}.btn-amber:hover{background:#f5b840}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--steel);color:var(--text)}
+.btn-danger{background:none;border:1px solid var(--red);color:var(--red)}.btn-danger:hover{background:var(--red);color:#fff}
+.btn-sm{font-size:14px;padding:6px 14px}.btn-xs{font-size:13px;padding:4px 10px}
+
+/* BADGES */
+.badge{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;padding:2px 10px;border-radius:2px;text-transform:uppercase}
+.badge-win{background:rgba(60,184,112,.15);color:var(--green);border:1px solid rgba(60,184,112,.3)}
+.badge-lost{background:rgba(204,68,68,.12);color:var(--red);border:1px solid rgba(204,68,68,.25)}
+.badge-pending{background:rgba(232,160,32,.12);color:var(--amber);border:1px solid rgba(232,160,32,.25)}
+.badge-active{background:rgba(92,143,181,.15);color:var(--steel);border:1px solid rgba(92,143,181,.3)}
+
+/* RECALL BANNER */
+.recall-banner{background:rgba(232,160,32,.1);border:1px solid var(--amber);border-radius:3px;padding:14px 18px;margin-bottom:16px;display:none}
+.recall-banner.show{display:flex;align-items:flex-start;gap:16px}
+.recall-icon{font-size:24px;flex-shrink:0;margin-top:2px}
+.recall-content{flex:1}
+.recall-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--amber);letter-spacing:.5px;margin-bottom:6px}
+.recall-grid{display:grid;grid-template-columns:repeat(5,auto);gap:6px 20px;font-size:13px}
+.recall-field{color:var(--muted)}.recall-val{color:var(--text);font-weight:500}
+.recall-actions{display:flex;gap:8px;margin-top:10px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--steel-dim)}
+
+/* SCREEN 1: NEW QUOTE */
+#screen-quote{flex-direction:row}
+.quote-sidebar{width:260px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:16px;border-bottom:1px solid var(--border);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--text);letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}
+.job-list{flex:1;overflow-y:auto;padding:8px 0}
+.job-item{padding:12px 16px;cursor:pointer;border-left:3px solid transparent;transition:all .12s;border-bottom:1px solid rgba(37,48,64,.5)}
+.job-item:hover{background:var(--surf-hi);border-left-color:var(--steel-dim)}
+.job-item.selected{background:var(--surf-hi);border-left-color:var(--amber)}
+.job-item-pn{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--amber);letter-spacing:.5px}
+.job-item-desc{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job-item-meta{display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--dim)}
+
+.quote-right-panel{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.quote-main{flex:1;min-height:0;overflow-y:auto;padding:24px 28px}
+
+/* TIME STACK */
+.time-stack-table{width:100%;border-collapse:collapse;font-size:15px}
+.time-stack-table th{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;color:var(--muted);text-align:right;padding:6px 10px;border-bottom:1px solid var(--border)}
+.time-stack-table th:first-child{text-align:left}
+.time-stack-table td{padding:5px 6px;border-bottom:1px solid rgba(37,48,64,.4)}
+.time-stack-table td:first-child{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;color:var(--text);padding-left:4px}
+.time-stack-table input{width:80px;padding:5px 7px;font-size:14px}
+.ts-act{color:var(--muted) !important;border-color:var(--border) !important;width:72px !important}
+.ts-act:focus{color:var(--text) !important;border-color:var(--steel-dim) !important}
+.ts-act::placeholder{color:var(--dim);font-size:12px}
+.ts-na{color:var(--dim);font-size:12px;display:block;text-align:right;padding-right:8px}
+.ts-perjob{font-size:11px;color:var(--dim)}
+.ts-unit{font-size:11px;color:var(--dim);display:block;text-align:right;margin-top:2px;letter-spacing:.3px}
+.time-stack-table .calc{color:var(--steel);text-align:right;padding-right:10px;font-size:14px;min-width:76px}
+.time-stack-table .total-row td{border-top:2px solid var(--border-hi);border-bottom:none;padding-top:10px;font-weight:500}
+.time-stack-table .total-row .calc{color:var(--amber);font-size:16px;font-weight:500}
+.time-stack-note{font-size:12px;color:var(--dim);margin-top:4px}
+.act-col-head{color:var(--dim) !important;font-style:italic}
+
+/* MATERIAL */
+.mat-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:12px;align-items:start}
+.mat-grid-2{display:grid;grid-template-columns:2fr 1fr;gap:12px;align-items:end;margin-top:12px}
+.mat-total-display{background:var(--surf-hi);border:1px solid var(--border);border-radius:3px;padding:8px 12px;font-size:18px;font-weight:500;color:var(--amber);text-align:right}
+.field-group{display:flex;flex-direction:column}
+.field-group input,.field-group select{width:100%}
+.mat-ref-label{font-size:11px;color:var(--dim);margin-top:3px;min-height:15px;letter-spacing:.5px}
+
+/* OUTSIDE PROCESSES */
+.op-table{width:100%;border-collapse:collapse;font-size:14px}
+.op-table th{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)}
+.op-table td{padding:5px 6px;border-bottom:1px solid rgba(37,48,64,.4)}
+.op-table input,.op-table select{width:100%;padding:5px 7px;font-size:13px}
+.op-table .op-cost{text-align:right}
+.op-total-row td{border-top:1px solid var(--border-hi);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--amber);text-align:right;padding:8px}
+
+/* RISK ENGINE */
+.risk-panel{background:var(--surf-hi);border:1px solid var(--border);border-radius:4px;padding:20px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start}
+.risk-flags{display:flex;flex-direction:column;gap:10px}
+.risk-flag{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surf);border:1px solid var(--border);border-radius:3px;cursor:pointer;transition:all .15s}
+.risk-flag:hover{border-color:var(--border-hi)}
+.risk-flag.active{border-color:var(--amber);background:rgba(232,160,32,.06)}
+.risk-flag-check{width:20px;height:20px;border:2px solid var(--border-hi);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--amber);flex-shrink:0;transition:all .15s}
+.risk-flag.active .risk-flag-check{background:var(--amber);color:#000;border-color:var(--amber)}
+.risk-flag-label{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;color:var(--muted);flex:1;letter-spacing:.3px}
+.risk-flag.active .risk-flag-label{color:var(--text)}
+.risk-flag-weight{font-size:13px;color:var(--dim);font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px}
+.risk-flag.active .risk-flag-weight{color:var(--amber-dim)}
+.risk-meter{display:flex;flex-direction:column;align-items:center;min-width:180px;gap:12px}
+.risk-multiplier{font-family:'Barlow Condensed',sans-serif;font-size:88px;font-weight:700;line-height:1;letter-spacing:-2px;transition:color .3s}
+.risk-multiplier.green{color:var(--green)}.risk-multiplier.amber{color:var(--amber)}.risk-multiplier.red{color:var(--red)}
+.risk-label{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.risk-bar-wrap{width:100%;height:10px;background:var(--surf);border-radius:5px;overflow:hidden;border:1px solid var(--border)}
+.risk-bar{height:100%;border-radius:5px;transition:width .3s,background .3s;width:0%}
+.vol-section{margin-top:16px;width:100%}
+.vol-presets{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.vol-preset{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;padding:6px 14px;background:var(--surf);border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:3px;transition:all .12s}
+.vol-preset:hover{border-color:var(--steel-dim);color:var(--text)}
+.vol-preset.active{background:rgba(92,143,181,.15);border-color:var(--steel);color:var(--steel)}
+.vol-input-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.vol-input-row input{width:90px;text-align:center;font-size:18px}
+.vol-input-row label{font-size:13px;color:var(--muted);margin:0}
+
+/* COST SUMMARY */
+.cost-summary{background:var(--surf-hi);border:1px solid var(--border-hi);border-radius:4px;overflow:hidden}
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border);font-size:15px}
+.cost-row:last-child{border-bottom:none}
+.cost-row.subtotal{background:rgba(37,48,64,.4)}
+.cost-row.grand-total{background:rgba(92,143,181,.1);border-top:2px solid var(--steel);padding:14px 18px}
+.cost-label{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;color:var(--muted);letter-spacing:.3px}
+.cost-val{font-size:16px;font-weight:500;color:var(--text)}
+.cost-val.amber{color:var(--amber)}.cost-val.big{font-size:28px;font-weight:500;color:var(--amber)}.cost-val.green{color:var(--green)}
+.margin-row{display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid var(--border)}
+.margin-row label{margin:0;font-size:16px;color:var(--muted)}
+.margin-row input{width:80px}
+.margin-display{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--green);margin-left:auto}
+.notes-area{padding:16px;border-top:1px solid var(--border)}
+
+/* PRICE BREAKS TABLE */
+.price-breaks-wrap{margin-top:2px}
+.price-breaks-table{width:100%;border-collapse:collapse}
+.price-breaks-table th{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;color:var(--dim);padding:6px 18px;border-bottom:1px solid var(--border);text-align:right;background:var(--surf)}
+.price-breaks-table th:first-child{text-align:left}
+.pb-row td{padding:7px 18px;border-bottom:1px solid rgba(37,48,64,.4);font-size:14px;color:var(--muted);text-align:right;transition:background .1s}
+.pb-row td:first-child{text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;letter-spacing:.5px}
+.pb-row:hover td{background:var(--surf);cursor:pointer}
+.pb-active td{background:rgba(232,160,32,.07);color:var(--text)}
+.pb-active td:first-child{color:var(--amber)}
+.pb-active td:last-child{color:var(--green);font-weight:500}
+.pb-qty-input{width:58px;padding:3px 6px;font-size:13px;text-align:center;background:transparent;border-color:transparent;color:var(--text)}
+.pb-qty-input:focus{background:var(--surf-hi);border-color:var(--steel)}
+.pb-active .pb-qty-input{color:var(--amber)}
+.pb-remove-btn{background:none;border:none;color:var(--dim);cursor:pointer;font-size:16px;padding:2px 6px;line-height:1;border-radius:2px;font-family:inherit}
+.pb-remove-btn:hover{color:var(--red)}
+.pb-add-row td{padding:8px 18px;border-top:1px solid var(--border-hi)}
+.pb-add-row input{width:72px;padding:4px 8px;font-size:13px;text-align:center;margin-right:6px}
+.op-basis-btn{font-size:13px;padding:4px 10px;letter-spacing:1px;min-width:48px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;border:2px solid var(--border-hi);border-radius:3px;background:var(--surf-hi);color:var(--muted);cursor:pointer;transition:all .15s}.op-basis-btn:hover{border-color:var(--amber);color:var(--amber)}
+
+/* ASSEMBLY STUB */
+.asm-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:12px 0 4px}
+.asm-rate-val{font-size:16px;color:var(--steel);padding:9px 0;font-weight:500}
+.asm-cost-val{font-size:18px;color:var(--green);padding:8px 0;font-weight:500}
+.asm-stub-note{font-size:11px;color:var(--dim);font-style:italic;padding-bottom:12px}
+
+/* SAVE BAR */
+.save-bar{display:flex;gap:12px;align-items:center;padding:16px;border-top:2px solid var(--border);background:var(--surf);flex-shrink:0}
+.save-bar .spacer{flex:1}
+.status-select-wrap{display:flex;align-items:center;gap:8px}
+.status-select-wrap label{margin:0;font-size:13px;color:var(--muted)}
+#save-status-select{font-size:14px;padding:7px 10px;max-width:130px}
+#save-confirm{font-size:13px;color:var(--green)}
+
+/* SCREEN 2: JOB HISTORY */
+#screen-history{flex-direction:column;overflow:hidden}
+.history-toolbar{padding:16px 24px;background:var(--surf);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-shrink:0}
+.history-toolbar h2{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--text);letter-spacing:1px;margin-right:8px}
+.search-box{position:relative;flex:1;max-width:360px}
+.search-box input{width:100%;padding-left:36px}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px}
+.filter-row{display:flex;gap:8px}
+.filter-btn{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;padding:7px 16px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:3px;transition:all .12s;letter-spacing:.5px}
+.filter-btn:hover{border-color:var(--steel-dim);color:var(--text)}
+.filter-btn.active{border-color:var(--steel);color:var(--steel);background:rgba(92,143,181,.1)}
+.history-body{flex:1;overflow-y:auto}
+.history-table{width:100%;border-collapse:collapse}
+.history-table th{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;color:var(--muted);text-align:left;padding:12px 16px;background:var(--surf);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:10;white-space:nowrap;cursor:pointer}
+.history-table th:hover{color:var(--text)}
+.history-table th.num{text-align:right}
+.history-table td{padding:13px 16px;border-bottom:1px solid rgba(37,48,64,.5);font-size:15px;vertical-align:middle}
+.history-table td.num{text-align:right}
+.history-table tr:hover td{background:var(--surf-hi);cursor:pointer}
+.td-pn{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--amber);letter-spacing:.5px}
+.td-desc{font-size:13px;color:var(--muted)}
+.variance{font-size:11px;margin-left:4px}
+.variance.over{color:var(--red)}.variance.under{color:var(--green)}
+.td-cust-link{color:var(--steel);cursor:pointer;text-decoration:underline}
+.td-cust-link:hover{color:var(--text)}
+
+/* SCREEN 3: CUSTOMERS */
+#screen-customers{flex-direction:row}
+.cust-sidebar{width:260px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.cust-main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.cust-detail-empty{flex:1;display:flex;align-items:center;justify-content:center}
+.cust-detail-empty-text{font-family:'Barlow Condensed',sans-serif;font-size:20px;letter-spacing:3px;color:var(--dim)}
+.cust-detail{flex:1;overflow-y:auto;padding:24px 28px}
+.cust-list-item{padding:12px 16px;cursor:pointer;border-left:3px solid transparent;transition:all .12s;border-bottom:1px solid rgba(37,48,64,.5)}
+.cust-list-item:hover{background:var(--surf-hi);border-left-color:var(--steel-dim)}
+.cust-list-item.selected{background:var(--surf-hi);border-left-color:var(--amber)}
+.cust-list-name{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--amber);letter-spacing:.5px}
+.cust-list-contact{font-size:12px;color:var(--muted);margin-top:2px}
+.cust-list-stats{font-size:11px;color:var(--dim);margin-top:4px}
+.cust-search{padding:10px 12px;border-bottom:1px solid var(--border)}
+.cust-search input{width:100%;font-size:14px;padding:7px 10px}
+.cust-list{flex:1;overflow-y:auto;padding:8px 0}
+
+/* CUSTOMER COMBO (in quote form) */
+.cust-combo{position:relative}
+.cust-dropdown{position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--surf-hi);border:1px solid var(--steel-dim);border-top:none;border-radius:0 0 3px 3px;max-height:220px;overflow-y:auto}
+.cust-dd-item{padding:10px 14px;cursor:pointer;font-size:15px;color:var(--text);border-bottom:1px solid var(--border)}
+.cust-dd-item:hover{background:var(--surf-top);color:var(--amber)}
+.cust-dd-contact{font-size:11px;color:var(--muted);margin-top:2px}
+.cust-dd-add{padding:10px 14px;cursor:pointer;font-size:14px;color:var(--steel);border-top:1px solid var(--border);font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.5px}
+.cust-dd-add:hover{background:var(--surf-top);color:var(--text)}
+.cust-selected-info{font-size:12px;color:var(--muted);margin-top:4px;min-height:16px}
+.cust-view-link{color:var(--steel);cursor:pointer;font-size:12px;text-decoration:underline;margin-left:8px}
+.cust-view-link:hover{color:var(--text)}
+.cust-new-form{position:absolute;top:100%;left:0;right:0;z-index:300;background:var(--surf-top);border:1px solid var(--steel);border-radius:3px;padding:16px;margin-top:2px}
+.cust-new-form input{width:100%;margin-bottom:8px;font-size:14px;padding:7px 10px}
+.cust-new-form-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text);letter-spacing:.5px;margin-bottom:12px}
+.cust-new-form-actions{display:flex;gap:8px;margin-top:4px}
+
+/* CUSTOMER DETAIL PANEL */
+.cust-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.cust-header-name{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:700;color:var(--amber);letter-spacing:1px}
+.cust-header-since{font-size:12px;color:var(--dim);margin-left:auto}
+.cust-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.cust-field-group{display:flex;flex-direction:column}
+.cust-field-group label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.cust-field-group input,.cust-field-group textarea{width:100%;font-size:14px;padding:7px 10px}
+.cust-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.cust-stat-card{background:var(--surf);border:1px solid var(--border);border-radius:4px;padding:16px 18px}
+.cust-stat-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+.cust-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:700;color:var(--amber);line-height:1}
+.cust-stat-sub{font-size:12px;color:var(--dim);margin-top:4px}
+.cust-jobs-table{width:100%;border-collapse:collapse}
+.cust-jobs-table th{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;color:var(--muted);text-align:left;padding:10px 14px;background:var(--surf);border-bottom:2px solid var(--border);white-space:nowrap}
+.cust-jobs-table th.num{text-align:right}
+.cust-jobs-table td{padding:11px 14px;border-bottom:1px solid rgba(37,48,64,.5);font-size:14px;vertical-align:middle}
+.cust-jobs-table td.num{text-align:right}
+.cust-jobs-table tr:hover td{background:var(--surf-hi);cursor:pointer}
+.cust-new-tab-form{background:var(--surf-hi);border:1px solid var(--border);border-radius:4px;padding:24px;max-width:560px}
+.cust-new-tab-form h3{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--steel);letter-spacing:1px;margin-bottom:20px}
+
+/* SCREEN 4: MATERIALS LIBRARY */
+#screen-materials{flex-direction:column;overflow:hidden}
+.materials-toolbar{padding:16px 24px;background:var(--surf);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-shrink:0}
+.materials-toolbar h2{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:var(--text);letter-spacing:1px}
+.mat-lib-body{flex:1;overflow-y:auto;padding:20px 24px}
+.mat-lib-table{width:100%;border-collapse:collapse}
+.mat-lib-table th{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;color:var(--muted);text-align:left;padding:10px 14px;background:var(--surf);border-bottom:2px solid var(--border);white-space:nowrap}
+.mat-lib-table th.num{text-align:right}
+.mat-lib-table td{padding:10px 12px;border-bottom:1px solid rgba(37,48,64,.4);font-size:14px;vertical-align:middle}
+.mat-lib-table td.num{text-align:right}
+.mat-lib-name{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--text)}
+.mat-lib-spec{font-size:12px;color:var(--dim);margin-top:2px}
+.mat-lib-ref{font-size:12px;color:var(--dim);text-align:right}
+.mat-lib-last{font-size:13px;color:var(--amber);text-align:right}
+.mat-lib-last-date{font-size:11px;color:var(--dim);text-align:right;margin-top:2px}
+.mat-lib-input{width:90px;padding:5px 8px;font-size:14px;text-align:right}
+.mat-lib-text-input{width:140px;padding:5px 8px;font-size:13px}
+
+/* SCREEN 5: SETTINGS */
+#screen-settings{flex-direction:column;overflow-y:auto}
+.settings-body{max-width:560px;padding:32px 40px}
+.settings-section{margin-bottom:36px}
+.settings-section h3{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--steel);letter-spacing:1px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.settings-field{margin-bottom:20px}
+.settings-field label{font-size:15px;margin-bottom:6px}
+.settings-field input{width:100%;max-width:380px}
+.settings-field .field-hint{font-size:12px;color:var(--dim);margin-top:4px}
+.rate-display{font-family:'Barlow Condensed',sans-serif;font-size:56px;font-weight:700;color:var(--amber);letter-spacing:-1px;margin:8px 0 2px}
+.rate-label{font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:12px}
+#settings-saved{font-size:13px;color:var(--green);margin-left:12px}
+
+/* UTILS */
+.row{display:flex;gap:16px;align-items:flex-end}
+.col{display:flex;flex-direction:column}
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mt-24{margin-top:24px}
+.mb-4{margin-bottom:4px}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.text-right{text-align:right}.text-muted{color:var(--muted)}.text-amber{color:var(--amber)}
+
+/* STOCK TYPE / DIMENSION ROW */
+.mat-stock-row{display:flex;gap:12px;align-items:flex-end;margin-top:12px;flex-wrap:wrap}
+.mat-stock-row .field-group{min-width:150px;flex:1}
+.mat-last-price{font-size:12px;color:var(--steel);margin-top:4px;min-height:16px;letter-spacing:.3px;font-weight:500}
+.mat-lib-select{background:var(--surf);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:4px 6px;border-radius:3px;outline:none;width:130px}
+.mat-lib-select:focus{border-color:var(--steel);background:var(--surf-hi)}
+
+/* SPOT PRICE BADGE */
+.spot-badge{display:inline-flex;align-items:center;gap:2px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;padding:1px 6px;border-radius:2px;cursor:default;vertical-align:middle}
+.spot-badge.up{background:rgba(204,68,68,.12);color:var(--red);border:1px solid rgba(204,68,68,.25)}
+.spot-badge.down{background:rgba(60,184,112,.12);color:var(--green);border:1px solid rgba(60,184,112,.25)}
+
+/* JOB OVERRIDES STRIP */
+.job-overrides{display:flex;gap:24px;align-items:flex-end;padding:12px 18px;background:rgba(37,48,64,.3);border:1px solid var(--border);border-radius:4px;margin-bottom:12px}
+.override-field{display:flex;flex-direction:column;gap:4px}
+.override-field label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0}
+.override-field input{width:90px;font-size:16px;padding:7px 10px;text-align:right}
+.override-hint{font-size:11px;color:var(--dim);margin-left:auto;align-self:center;font-style:italic}
+
+/* SIDEBAR SEARCH */
+.sidebar-search{padding:8px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sidebar-search input{width:100%;font-size:13px;padding:6px 10px}
+.sidebar-group-hdr{padding:5px 14px 3px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--steel);background:var(--surf-hi);border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
+
+/* INCOMPLETE ALERT MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--surf-top);border:1px solid var(--border-hi);border-radius:4px;padding:28px 32px;max-width:460px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--text);letter-spacing:.5px;margin-bottom:12px}
+.modal-body{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:0}
+.modal-list{list-style:none;margin:0 0 16px;padding:0}
+.modal-list li{padding:7px 0;font-size:14px;color:var(--text);border-bottom:1px solid var(--border)}
+.modal-list li:last-child{border-bottom:none}
+.modal-list li::before{content:'→ ';color:var(--amber)}
+.modal-actions{display:flex;gap:12px;margin-top:20px;justify-content:flex-end}
+
+/* SORT ARROWS */
+.sort-arrow{font-size:10px;margin-left:3px;opacity:.35}
+.history-table th.sorted .sort-arrow{opacity:1;color:var(--amber)}
+.history-table th:not([onclick]){cursor:default}
+
+/* DUPLICATE PN WARNING */
+.pn-warn{display:none;background:rgba(232,160,32,.08);border:1px solid var(--amber);border-radius:3px;padding:10px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.5px;color:var(--amber);align-items:center;gap:12px;flex-wrap:wrap}
+.pn-warn.show{display:flex}
+.pn-warn-text{flex:1}
+.pn-warn-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* NRE SECTION */
+.nre-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;padding:12px 0 8px}
+.nre-separate-row{display:flex;align-items:center;gap:16px;padding:0 0 12px;flex-wrap:wrap}
+.nre-sep-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;font-family:'DM Mono',monospace}
+.nre-sep-label input[type=checkbox]{cursor:pointer;accent-color:var(--amber);width:14px;height:14px}
+.nre-mode-note{font-size:11px;color:var(--dim);font-style:italic;margin-left:auto}
+
+/* PRINT */
+@media print {
+  .quote-sidebar,.topbar,.save-bar,#screen-history,#screen-customers,#screen-suppliers,#screen-vendors,#screen-materials,#screen-settings{display:none!important}
+  .app{height:auto;overflow:visible}
+  .screens{overflow:visible;display:block}
+  #screen-quote{display:block!important;height:auto;overflow:visible}
+  .quote-main{overflow:visible;padding:16px}
+  body{background:#fff;color:#000}
+  :root{--text:#000;--muted:#444;--amber:#b07000;--steel:#2255aa;--bg:#fff;--surf:#fff;--surf-hi:#f5f5f5;--border:#ccc;--border-hi:#aaa;--dim:#888;--green:#1a7a40;--red:#aa2222}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">◈ CutSheet <span>v6.0</span></div>
+  <div class="topbar-tabs">
+    <button class="tab-btn active" onclick="showTab('quote')">New Quote</button>
+    <button class="tab-btn" onclick="showTab('history')">Job History</button>
+    <button class="tab-btn" onclick="showTab('customers')">Customers</button>
+    <button class="tab-btn" onclick="showTab('suppliers')">Suppliers</button>
+    <button class="tab-btn" onclick="showTab('vendors')">Vendors</button>
+    <button class="tab-btn" onclick="showTab('materials')">Materials Library</button>
+    <button class="tab-btn" onclick="showTab('settings')">Settings</button>
+  </div>
+  <div class="topbar-right">
+    <span class="autosave-dot" id="autosave-dot" title="Auto-save status"></span>
+    <span id="topbar-shopname">Your Shop</span>
+    <span class="shop-rate" id="display-rate">$125/hr</span>
+  </div>
+</div>
+
+<!-- SCREEN 1: NEW QUOTE -->
+<div id="screen-quote" class="screen active">
+
+  <div class="quote-sidebar">
+    <div class="sidebar-header">
+      Quotes
+      <button class="btn btn-ghost btn-xs" onclick="newQuote()">+ New</button>
+    </div>
+    <div class="sidebar-search">
+      <input type="text" id="sidebar-search-input" placeholder="Search quotes..."
+        oninput="sidebarSearchInput(this.value)"
+        onkeydown="if(event.key==='Escape'){clearSidebarSearch()}">
+    </div>
+    <div class="job-list" id="sidebarList"></div>
+  </div>
+
+  <div class="quote-right-panel">
+  <div class="quote-main">
+
+    <!-- PART ID -->
+    <div class="section-header">Part Identification</div>
+    <div class="row mb-4" style="align-items:flex-start">
+      <div class="col" style="flex:1">
+        <label>PART NUMBER</label>
+        <input type="text" id="pn-input" placeholder="e.g. TI-4472-B" oninput="checkRepeatPart(this.value);scheduleAutoSave()" style="font-size:20px;letter-spacing:2px;font-weight:500">
+        <div class="cust-selected-info"></div>
+      </div>
+      <div class="col" style="flex:0 0 80px">
+        <label>REV</label>
+        <input type="text" id="rev-input" placeholder="A" maxlength="8" oninput="scheduleAutoSave()" style="font-size:20px;text-align:center;font-weight:700;letter-spacing:2px">
+      </div>
+      <div class="col" style="flex:2">
+        <label>DESCRIPTION</label>
+        <input type="text" id="desc-input" placeholder="Part description" oninput="scheduleAutoSave()">
+        <div class="cust-selected-info"></div>
+      </div>
+      <div class="col cust-combo" style="flex:1;position:relative">
+        <label>CUSTOMER</label>
+        <input type="text" id="customer-input" placeholder="Type to search..." oninput="customerComboInput(this.value);scheduleAutoSave()" onfocus="customerComboInput(this.value)" onblur="customerComboBlur()" autocomplete="off">
+        <div class="cust-dropdown" id="cust-dropdown" style="display:none"></div>
+        <div class="cust-new-form" id="cust-new-form" style="display:none">
+          <div class="cust-new-form-title">NEW CUSTOMER</div>
+          <input type="text" id="cnf-name" placeholder="Company name *">
+          <input type="text" id="cnf-contact" placeholder="Contact name">
+          <input type="text" id="cnf-phone" placeholder="Phone">
+          <input type="text" id="cnf-email" placeholder="Email">
+          <div class="cust-new-form-actions">
+            <button class="btn btn-amber btn-sm" onclick="saveNewCustomer()">Save</button>
+            <button class="btn btn-ghost btn-sm" onclick="cancelNewCustomer()">Cancel</button>
+          </div>
+        </div>
+        <div class="cust-selected-info" id="cust-selected-info"></div>
+      </div>
+    </div>
+
+    <!-- JOB NUMBER / DRAWING ROW -->
+    <div class="row mt-8">
+      <div class="col" style="flex:0 0 180px">
+        <label>JOB NUMBER</label>
+        <input type="text" id="job-number-input" placeholder="Auto-assign" oninput="scheduleAutoSave()" style="font-size:16px;letter-spacing:1px;font-weight:500">
+      </div>
+      <div class="col" style="flex:1">
+        <label>DRAWING / MODEL</label>
+        <input type="text" id="drawing-link-input" placeholder="URL, file path, or HubSpot ref" oninput="scheduleAutoSave()">
+      </div>
+      <div class="col" style="flex:0 0 200px">
+        <label>PAYMENT TERMS</label>
+        <select id="payment-terms-select" onchange="paymentTermsChanged();scheduleAutoSave()" style="font-size:15px">
+          <option value="">— Select —</option>
+          <option value="COD">COD</option>
+          <option value="Net 10">Net 10</option>
+          <option value="Net 30">Net 30</option>
+          <option value="Net 60">Net 60</option>
+          <option value="Net 90">Net 90</option>
+          <option value="Custom">Custom</option>
+        </select>
+        <input type="text" id="payment-terms-custom" placeholder="Specify terms…" style="display:none;margin-top:6px;font-size:13px" oninput="scheduleAutoSave()">
+      </div>
+    </div>
+
+    <!-- RECALL BANNER -->
+    <div class="recall-banner" id="recallBanner">
+      <div class="recall-icon">⟳</div>
+      <div class="recall-content">
+        <div class="recall-title" id="recall-title">REPEAT PART</div>
+        <div class="recall-grid" id="recall-grid"></div>
+        <div class="recall-actions">
+          <button class="btn btn-amber btn-sm" onclick="loadRecall()">Load Last Quote</button>
+          <button class="btn btn-ghost btn-sm" onclick="dismissRecall()">Start Fresh</button>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- QTY SELECTOR (TOP) -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);white-space:nowrap">QTY:</span>
+      <div id="vol-presets-top" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center"></div>
+      <input type="number" id="qty-input-top" value="1" min="1" step="1" oninput="updateVol(this.value)" style="width:72px;text-align:center;font-size:15px;padding:4px 6px">
+      <input type="number" id="qty-add-top" placeholder="+ qty" min="1" step="1" style="width:72px;text-align:center;font-size:13px;padding:4px 6px;color:var(--muted)" onkeydown="if(event.key==='Enter')addQtyFromTop()">
+      <button class="btn btn-ghost btn-xs" onclick="addQtyFromTop()">Add</button>
+    </div>
+
+    <!-- TIME STACK -->
+    <div class="section-header">
+      Time Stack
+      <span class="text-muted" style="font-size:14px;font-weight:400">All times in minutes</span>
+    </div>
+    <table class="time-stack-table">
+      <thead>
+        <tr>
+          <th style="width:155px">Operation</th>
+          <th style="text-align:right;width:110px">Time (min)</th>
+          <th style="width:130px"></th>
+          <th style="text-align:right;width:80px">Cost/Pc</th>
+          <th style="text-align:right;width:82px" class="act-col-head">ACTUAL<br><span style="font-weight:400;font-size:10px">(min recorded)</span></th>
+        </tr>
+      </thead>
+      <tbody id="time-tbody"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="2" style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--muted)">TOTAL LABOR</td>
+          <td></td>
+          <td class="calc" id="total-labor-cost">—</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="time-stack-note mt-8">Setup amortized over qty · Ops = operations/setups · Rate: <span id="note-rate" class="text-amber">$125/hr</span> · <span style="color:var(--dim);font-style:italic">Record actuals after the job runs — feeds the learning loop</span></div>
+
+    <hr class="divider">
+
+    <!-- MATERIAL -->
+    <div class="section-header">Material</div>
+    <div class="mat-grid">
+      <div class="field-group">
+        <label>MATERIAL</label>
+        <select id="mat-select" onchange="matSelectChanged();scheduleAutoSave()">
+          <option value="">-- Select Material --</option>
+          <option value="6061">6061-T6 Aluminum</option>
+          <option value="7075">7075-T6 Aluminum</option>
+          <option value="304ss">304 Stainless Steel</option>
+          <option value="316ss">316 Stainless Steel</option>
+          <option value="4140">4140 Steel</option>
+          <option value="ti6al4v">Ti-6Al-4V (Grade 5)</option>
+          <option value="in718">Inconel 718</option>
+          <option value="a2tool">A2 Tool Steel</option>
+          <option value="in625">Inconel 625</option>
+          <option value="c360">C360 Brass</option>
+          <option value="2024">2024-T4 Aluminum</option>
+          <option value="custom">Custom / Other</option>
+        </select>
+        <input type="text" id="mat-custom-name" placeholder="Specify material…" style="display:none;margin-top:6px;width:100%;font-size:14px" oninput="scheduleAutoSave()">
+        <div class="mat-last-price" id="mat-last-price"></div>
+      </div>
+      <div class="field-group">
+        <label id="mat-weight-label">WEIGHT (lbs)</label>
+        <input type="number" id="mat-weight" placeholder="0.00" step="0.01" oninput="calcAll();scheduleAutoSave()" min="0">
+        <div class="mat-ref-label"></div>
+      </div>
+      <div class="field-group">
+        <label id="mat-cplb-label">COST/LB ($)</label>
+        <input type="number" id="mat-cplb" placeholder="0.00" step="0.01" oninput="calcAll();scheduleAutoSave()" min="0">
+        <div class="mat-ref-label" id="mat-ref-display"></div>
+      </div>
+      <div class="field-group">
+        <label>MARKUP %</label>
+        <input type="number" id="mat-markup" value="20" min="0" max="200" step="1" oninput="calcAll();scheduleAutoSave()">
+        <div class="mat-ref-label"></div>
+      </div>
+      <div class="field-group">
+        <label>MATERIAL COST/PC</label>
+        <div class="mat-total-display" id="mat-total">$0.00</div>
+        <div class="mat-ref-label"></div>
+      </div>
+    </div>
+
+    <!-- STOCK TYPE + DIMENSION ROW -->
+    <div class="mat-stock-row">
+      <div class="field-group">
+        <label>STOCK TYPE</label>
+        <select id="mat-stock-type" onchange="stockTypeChanged();scheduleAutoSave()">
+          <option value="">-- Select --</option>
+          ${/* populated at runtime via JS */'' }
+        </select>
+        <div class="mat-ref-label"></div>
+      </div>
+      <div class="field-group" id="mat-dimension-group">
+        <label>DIMENSION</label>
+        <select id="mat-dimension" onchange="dimSelectChanged();scheduleAutoSave()">
+          <option value="">-- Select --</option>
+        </select>
+        <input type="text" id="mat-custom-dim" placeholder='e.g. 2.5"' style="display:none;margin-top:4px;width:100%" oninput="scheduleAutoSave()">
+        <div class="mat-ref-label"></div>
+      </div>
+      <div class="field-group" id="mat-bar-length-group" style="display:none">
+        <label>BAR LENGTH</label>
+        <select id="mat-bar-length" onchange="barLengthChanged();scheduleAutoSave()">
+          <option value="">-- Select --</option>
+          ${/* populated at runtime */'' }
+        </select>
+        <input type="text" id="mat-custom-bar-length" placeholder="e.g. 18ft" style="display:none;margin-top:4px;width:100%" oninput="scheduleAutoSave()">
+      </div>
+    </div>
+
+    <div class="mat-grid-2">
+      <div class="field-group">
+        <label>SUPPLIER</label>
+        <select id="mat-supplier" onchange="matSupplierChanged();scheduleAutoSave()">
+          <option value="">— Select Supplier —</option>
+          <option value="__add__">+ Add Supplier…</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>MATERIAL LEAD TIME</label>
+        <input type="text" id="mat-lead" placeholder="e.g. 3–5 days" oninput="scheduleAutoSave()">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- OUTSIDE PROCESSES -->
+    <div class="section-header">
+      Outside Processes
+      <button class="btn btn-ghost btn-sm" onclick="addOpRow()">+ Add Process</button>
+    </div>
+    <table class="op-table" id="op-table">
+      <thead>
+        <tr>
+          <th style="width:175px">Process</th>
+          <th style="width:145px">Vendor</th>
+          <th style="width:52px">Basis</th>
+          <th style="width:95px">Cost</th>
+          <th style="width:90px">Lead Time</th>
+          <th>Notes</th>
+          <th style="width:36px"></th>
+        </tr>
+      </thead>
+      <tbody id="op-tbody"></tbody>
+      <tfoot>
+        <tr class="op-total-row">
+          <td colspan="3">OUTSIDE PROCESS / PC</td>
+          <td id="op-total">$0.00</td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <hr class="divider">
+
+    <!-- ASSEMBLY STUB -->
+    <div class="section-header">
+      Assembly
+      <button class="btn btn-ghost btn-sm" id="asm-toggle" onclick="toggleAsm()">+ Add Assembly</button>
+    </div>
+    <div id="asm-section" style="display:none">
+      <div class="asm-row">
+        <div class="field-group">
+          <label>ASSEMBLY HOURS</label>
+          <input type="number" id="asm-hours" value="0" min="0" step="0.25" oninput="calcAll();scheduleAutoSave()">
+        </div>
+        <div class="field-group">
+          <label>RATE (SHOP $/HR)</label>
+          <div id="asm-rate-display" class="asm-rate-val">$125/hr</div>
+        </div>
+        <div class="field-group">
+          <label>ASSEMBLY COST</label>
+          <div class="asm-cost-val" id="asm-cost-display">$0.00</div>
+        </div>
+      </div>
+      <div class="asm-stub-note">Basic assembly: hours × shop rate. Feeds into sell price. Full assembly module (kitting, sub-ops) in a future update.</div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- NRE -->
+    <div class="section-header">
+      NRE
+      <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:400;color:var(--dim);letter-spacing:.5px;margin-left:4px">Non-Recurring Engineering</span>
+      <button class="btn btn-ghost btn-sm" id="nre-toggle" onclick="toggleNre()">+ Add NRE</button>
+    </div>
+    <div id="nre-section" style="display:none">
+      <div class="nre-grid">
+        <div class="field-group">
+          <label>ENGINEERING ($)</label>
+          <input type="number" id="nre-engineering" placeholder="0.00" step="0.01" min="0" oninput="calcAll();scheduleAutoSave()">
+        </div>
+        <div class="field-group">
+          <label>TOOLING ($)</label>
+          <input type="number" id="nre-tooling" placeholder="0.00" step="0.01" min="0" oninput="calcAll();scheduleAutoSave()">
+        </div>
+        <div class="field-group">
+          <label>FIXTURES ($)</label>
+          <input type="number" id="nre-fixtures" placeholder="0.00" step="0.01" min="0" oninput="calcAll();scheduleAutoSave()">
+        </div>
+        <div class="field-group">
+          <label>OTHER ($)</label>
+          <input type="number" id="nre-other" placeholder="0.00" step="0.01" min="0" oninput="calcAll();scheduleAutoSave()">
+        </div>
+        <div class="field-group">
+          <label>NRE TOTAL</label>
+          <div class="mat-total-display" id="nre-total-display" style="font-size:16px">$0.00</div>
+        </div>
+      </div>
+      <div class="nre-separate-row">
+        <label class="nre-sep-label">
+          <input type="checkbox" id="nre-separate" onchange="calcAll();scheduleAutoSave()">
+          Show separate on customer quote
+        </label>
+        <div class="nre-mode-note" id="nre-mode-note">Baked in — amortized into unit price by quantity</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- SHIPPING -->
+    <div class="section-header">Shipping</div>
+    <div class="row" style="align-items:flex-end;gap:16px;margin-bottom:16px">
+      <div class="col" style="flex:2">
+        <label>CARRIER</label>
+        <input type="text" id="shipping-carrier" placeholder="e.g. FedEx, UPS, customer pickup" oninput="scheduleAutoSave()">
+      </div>
+      <div class="col" style="flex:1">
+        <label>SHIPPING COST ($)</label>
+        <input type="number" id="shipping-cost" value="0" min="0" step="0.01" oninput="calcAll();scheduleAutoSave()">
+      </div>
+      <div class="col" style="flex:0 0 auto">
+        <label>&nbsp;</label>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--steel);padding:6px 0" id="shipping-cost-display">$0.00</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- RISK ENGINE -->
+    <div class="section-header">Risk Engine</div>
+    <div class="risk-panel">
+      <div>
+        <div class="section-label" style="margin-bottom:12px">Risk Flags — click to toggle</div>
+        <div class="risk-flags" id="risk-flags"></div>
+      </div>
+      <div class="risk-meter">
+        <div class="section-label">Risk Multiplier</div>
+        <div class="risk-multiplier green" id="risk-mult-display">1.00×</div>
+        <div class="risk-bar-wrap"><div class="risk-bar" id="risk-bar"></div></div>
+        <div class="risk-label" id="risk-level-label">LOW RISK</div>
+        <div class="vol-section">
+          <div class="section-label" style="text-align:center">Quantity</div>
+          <div class="vol-presets" id="vol-presets" style="flex-wrap:wrap"></div>
+          <div class="vol-input-row">
+            <label>QTY:</label>
+            <input type="number" id="qty-input" value="1" min="1" oninput="updateVol(this.value)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- COST SUMMARY -->
+    <div class="section-header">Cost Summary</div>
+
+    <!-- Per-job overrides — pre-fill from Settings, editable without leaving the quote -->
+    <div class="job-overrides">
+      <div class="override-field">
+        <label>OVERHEAD $/HR</label>
+        <input type="number" id="overhead-input" value="0" min="0" step="1" oninput="calcAll();scheduleAutoSave()">
+      </div>
+      <div class="override-field">
+        <label>OP MARKUP %</label>
+        <input type="number" id="op-markup-input" value="0" min="0" max="200" step="1" oninput="calcAll();scheduleAutoSave()">
+      </div>
+      <span class="override-hint">Defaults from Settings · override per job</span>
+    </div>
+
+    <div class="cost-summary">
+      <div class="cost-row"><span class="cost-label">Labor (per piece)</span><span class="cost-val" id="sum-labor">$0.00</span></div>
+      <div class="cost-row" id="row-overhead" style="display:none"><span class="cost-label" style="color:var(--dim);padding-left:16px">+ Overhead</span><span class="cost-val" id="sum-overhead">$0.00</span></div>
+      <div class="cost-row"><span class="cost-label">Material (raw)</span><span class="cost-val" id="sum-mat-raw">$0.00</span></div>
+      <div class="cost-row" id="row-mat-markup" style="display:none"><span class="cost-label" style="color:var(--dim);padding-left:16px">+ Material Markup</span><span class="cost-val" id="sum-mat-markup">$0.00</span></div>
+      <div class="cost-row"><span class="cost-label">Outside Processes (raw)</span><span class="cost-val" id="sum-op-raw">$0.00</span></div>
+      <div class="cost-row" id="row-op-markup" style="display:none"><span class="cost-label" style="color:var(--dim);padding-left:16px">+ OP Markup</span><span class="cost-val" id="sum-op-markup">$0.00</span></div>
+      <div class="cost-row" id="row-asm" style="display:none"><span class="cost-label">Assembly</span><span class="cost-val" id="sum-asm">$0.00</span></div>
+      <div class="cost-row" id="row-nre" style="display:none"><span class="cost-label">NRE (per piece)</span><span class="cost-val" id="sum-nre">$0.00</span></div>
+      <div class="cost-row subtotal"><span class="cost-label">Raw Cost / Piece</span><span class="cost-val amber" id="sum-raw">$0.00</span></div>
+      <div class="cost-row"><span class="cost-label">Risk Multiplier</span><span class="cost-val" id="sum-risk">1.00×</span></div>
+      <div class="cost-row subtotal"><span class="cost-label">Adjusted Cost / Piece</span><span class="cost-val amber" id="sum-adj">$0.00</span></div>
+      <div class="margin-row">
+        <label>MARGIN %</label>
+        <input type="number" id="margin-input" value="40" min="0" max="95" step="1" oninput="calcAll();scheduleAutoSave()">
+        <div class="margin-display" id="margin-display">40% GM</div>
+      </div>
+      <div class="cost-row grand-total">
+        <span class="cost-label" style="font-size:20px;color:var(--text)">SELL PRICE / PIECE</span>
+        <span class="cost-val big" id="sum-sell">$0.00</span>
+      </div>
+      <div class="price-breaks-wrap">
+        <table class="price-breaks-table">
+          <thead><tr>
+            <th>QTY</th>
+            <th>PRICE / PC</th>
+            <th>EXTENDED</th>
+            <th style="width:32px"></th>
+          </tr></thead>
+          <tbody id="price-breaks-body"></tbody>
+          <tfoot>
+            <tr class="pb-add-row">
+              <td colspan="4">
+                <input type="number" id="pb-add-input" placeholder="Add qty…" min="1" step="1"
+                  onkeydown="if(event.key==='Enter')addPriceBreakRow()">
+                <button class="btn btn-ghost btn-xs" onclick="addPriceBreakRow()">+ Add</button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="notes-area">
+        <label>ESTIMATOR NOTES</label>
+        <textarea id="est-notes" placeholder="Material certs required · Tolerance stack on bore dia · Confirm anodize spec before quoting..." oninput="scheduleAutoSave()"></textarea>
+      </div>
+    </div>
+
+    <!-- DUPLICATE PN WARNING — shown inline when a new quote reuses an existing part number -->
+    <div class="pn-warn" id="pn-warn">
+      <span class="pn-warn-text">⚠ THIS PART NUMBER EXISTS — ARE YOU CREATING A NEW REVISION?</span>
+      <div class="pn-warn-actions">
+        <button class="btn btn-amber btn-sm" onclick="confirmSaveQuote()">Continue</button>
+        <button class="btn btn-ghost btn-sm" onclick="dismissPnWarn()">Cancel</button>
+      </div>
+    </div>
+
+
+  </div><!-- /quote-main -->
+
+  <!-- SAVE BAR — outside scroll area, always visible -->
+  <div class="save-bar">
+    <button class="btn btn-amber" onclick="saveQuote()">💾 Save Quote</button>
+    <div class="status-select-wrap">
+      <label>STATUS:</label>
+      <select id="save-status-select" onchange="scheduleAutoSave()">
+        <option value="PENDING">Pending</option>
+        <option value="WIN">Win</option>
+        <option value="LOST">Lost</option>
+        <option value="ACTIVE">Active</option>
+      </select>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap">
+      <input type="checkbox" id="quote-include-notes" style="cursor:pointer"> Include notes
+    </label>
+    <button class="btn btn-ghost" id="btn-requote" onclick="reQuote()" style="display:none" title="Load as new revision">↺ Re-Quote</button>
+    <button class="btn btn-ghost" onclick="window.print()">🖨 Internal Copy</button>
+    <button class="btn btn-ghost" onclick="printCustomerQuote()">📄 Customer Quote</button>
+    <div class="spacer"></div>
+    <span id="save-confirm"></span>
+  </div>
+
+  </div><!-- /quote-right-panel -->
+</div><!-- /screen-quote -->
+
+<!-- SCREEN 2: JOB HISTORY -->
+<div id="screen-history" class="screen">
+  <div class="history-toolbar">
+    <h2>◈ Job History</h2>
+    <div class="search-box">
+      <span class="search-icon">⌕</span>
+      <input type="text" placeholder="Search part number, description, or customer..." oninput="filterHistory(this.value)" id="hist-search">
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setHistFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setHistFilter('WIN',this)">Win</button>
+      <button class="filter-btn" onclick="setHistFilter('LOST',this)">Lost</button>
+      <button class="filter-btn" onclick="setHistFilter('PENDING',this)">Pending</button>
+    </div>
+    <div style="margin-left:auto;font-size:13px;color:var(--muted)" id="hist-count"></div>
+  </div>
+  <div class="history-body">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th id="th-pn" onclick="sortHistory('pn')">PART NO. / DESCRIPTION<span class="sort-arrow" id="sa-pn">↕</span></th>
+          <th id="th-customer" onclick="sortHistory('customer')">CUSTOMER<span class="sort-arrow" id="sa-customer">↕</span></th>
+          <th class="num" id="th-qty" onclick="sortHistory('qty')">QTY<span class="sort-arrow" id="sa-qty">↕</span></th>
+          <th class="num" id="th-sellPc" onclick="sortHistory('sellPc')">PRICE/PC<span class="sort-arrow" id="sa-sellPc">↕</span></th>
+          <th class="num" style="cursor:default">EST HRS</th>
+          <th class="num" style="cursor:default">ACT HRS</th>
+          <th class="num" id="th-date" onclick="sortHistory('date')">DATE<span class="sort-arrow" id="sa-date">↓</span></th>
+          <th id="th-status" onclick="sortHistory('status')">STATUS<span class="sort-arrow" id="sa-status">↕</span></th>
+          <th style="cursor:default"></th>
+        </tr>
+      </thead>
+      <tbody id="hist-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SCREEN 3: CUSTOMERS -->
+<div id="screen-customers" class="screen">
+  <div class="cust-sidebar">
+    <div class="sidebar-header">
+      Customers
+      <button class="btn btn-ghost btn-xs" onclick="openNewCustomerTab()">+ New</button>
+    </div>
+    <div class="cust-search">
+      <input type="text" id="cust-list-search" placeholder="Search customers..." oninput="custSearch=this.value.toLowerCase();buildCustomerList()">
+    </div>
+    <div class="cust-list" id="cust-list"></div>
+  </div>
+  <div class="cust-main" id="cust-main">
+    <!-- Persistent flash element — sits outside cust-detail so it survives innerHTML rebuilds -->
+    <div id="cust-saved-flash" style="display:none;padding:6px 28px;font-size:13px;color:var(--green);background:var(--surf);border-bottom:1px solid var(--border);flex-shrink:0;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:1px">✓ SAVED</div>
+    <div class="cust-detail-empty" id="cust-empty">
+      <div class="cust-detail-empty-text">SELECT A CUSTOMER</div>
+    </div>
+    <div class="cust-detail" id="cust-detail" style="display:none"></div>
+  </div>
+</div>
+
+<!-- SCREEN: SUPPLIERS -->
+<div id="screen-suppliers" class="screen" style="flex-direction:row">
+  <div class="cust-sidebar">
+    <div class="sidebar-header">Suppliers <button class="btn btn-ghost btn-xs" onclick="addSupplier()">+ New</button></div>
+    <div class="cust-search"><input type="text" id="supp-search" placeholder="Search suppliers..." oninput="buildSupplierList()"></div>
+    <div class="cust-list" id="supp-list"></div>
+  </div>
+  <div class="cust-main" id="supp-main">
+    <div class="cust-detail-empty" id="supp-empty"><div class="cust-detail-empty-text">SELECT A SUPPLIER</div></div>
+    <div class="cust-detail" id="supp-detail" style="display:none"></div>
+  </div>
+</div>
+
+<!-- SCREEN: VENDORS -->
+<div id="screen-vendors" class="screen" style="flex-direction:row">
+  <div class="cust-sidebar">
+    <div class="sidebar-header">Vendors <button class="btn btn-ghost btn-xs" onclick="addVendor()">+ New</button></div>
+    <div class="cust-search"><input type="text" id="vend-search" placeholder="Search vendors..." oninput="buildVendorList()"></div>
+    <div class="cust-list" id="vend-list"></div>
+  </div>
+  <div class="cust-main" id="vend-main">
+    <div class="cust-detail-empty" id="vend-empty"><div class="cust-detail-empty-text">SELECT A VENDOR</div></div>
+    <div class="cust-detail" id="vend-detail" style="display:none"></div>
+  </div>
+</div>
+
+<!-- SCREEN 4: MATERIALS LIBRARY -->
+<div id="screen-materials" class="screen">
+  <div class="materials-toolbar">
+    <h2>◈ Materials Library</h2>
+    <span style="font-size:13px;color:var(--muted);margin-left:8px">Your prices update automatically when you save a quote. Edit any row to override.</span>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="buildMatLibrary()">↺ Refresh</button>
+  </div>
+  <div class="mat-lib-body">
+    <table class="mat-lib-table">
+      <thead>
+        <tr>
+          <th>MATERIAL</th>
+          <th>STOCK TYPE</th>
+          <th>DIMENSION</th>
+          <th>BAR LEN</th>
+          <th class="num">YOUR PRICE/UNIT</th>
+          <th class="num">LAST USED</th>
+          <th class="num">LAST DATE</th>
+          <th>SUPPLIER</th>
+          <th>LEAD TIME</th>
+        </tr>
+      </thead>
+      <tbody id="mat-lib-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SCREEN 5: SETTINGS -->
+<div id="screen-settings" class="screen">
+  <div class="settings-body">
+    <div class="section-header" style="font-size:26px">Shop Settings</div>
+    <div class="settings-section">
+      <h3>Shop Information</h3>
+      <div class="settings-field">
+        <label>SHOP NAME</label>
+        <input type="text" id="set-shopname" placeholder="Your shop name" oninput="applySettingsLive()" style="max-width:100%;font-size:18px">
+        <div class="field-hint">Appears in the header and on printed quotes</div>
+      </div>
+      <div class="settings-field">
+        <label>JOB NUMBER PREFIX</label>
+        <input type="text" id="set-job-prefix" placeholder="e.g. Q-, JOB-, or leave blank" oninput="applySettingsLive()" style="max-width:280px;font-size:18px">
+        <div class="field-hint">Prepended to job numbers (e.g. "Q-1001"). Numbers auto-increment.</div>
+      </div>
+      <div class="settings-field">
+        <label>SHOP PHONE</label>
+        <input type="text" id="set-phone" placeholder="(555) 555-5555" oninput="applySettingsLive()" style="max-width:100%;font-size:18px">
+      </div>
+      <div class="settings-field">
+        <label>SHOP EMAIL</label>
+        <input type="text" id="set-email" placeholder="quotes@yourshop.com" oninput="applySettingsLive()" style="max-width:100%;font-size:18px">
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Machine Rate</h3>
+      <div class="settings-field">
+        <div class="rate-display" id="rate-display">$125</div>
+        <div class="rate-label">PER HOUR — applied to all setup, cycle, and labor times</div>
+        <input type="number" id="set-rate" value="125" min="1" step="1" oninput="applySettingsLive()" style="max-width:180px;font-size:22px">
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Margins &amp; Markups</h3>
+      <div class="settings-field">
+        <label>DEFAULT MARGIN %</label>
+        <input type="number" id="set-margin" value="40" min="0" max="95" step="1" oninput="applySettingsLive()" style="max-width:180px;font-size:22px">
+        <div class="field-hint">Pre-fills the margin field on every new quote</div>
+      </div>
+      <div class="settings-field">
+        <label>DEFAULT MATERIAL MARKUP %</label>
+        <input type="number" id="set-mat-markup" value="20" min="0" max="200" step="1" oninput="applySettingsLive()" style="max-width:180px;font-size:22px">
+        <div class="field-hint">Markup applied on top of raw material cost — covers handling and waste</div>
+      </div>
+      <div class="settings-field">
+        <label>DEFAULT OUTSIDE PROCESS MARKUP %</label>
+        <input type="number" id="set-op-markup" value="0" min="0" max="200" step="1" oninput="applySettingsLive()" style="max-width:180px;font-size:22px">
+        <div class="field-hint">Markup applied to outside process costs before margin</div>
+      </div>
+      <div class="settings-field">
+        <label>DEFAULT OVERHEAD RATE $/HR</label>
+        <input type="number" id="set-overhead" value="0" min="0" step="1" oninput="applySettingsLive()" style="max-width:180px;font-size:22px">
+        <div class="field-hint">Shop overhead added to machine time — utilities, insurance, etc.</div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>Machines</h3>
+      <div class="field-hint" style="margin-bottom:14px">Each machine can have its own hourly rate. Select a machine per time stack row. Falls back to Shop Rate if none selected.</div>
+      <div id="machine-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addMachine()">+ Add Machine</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Risk Engine — Flag Weights</h3>
+      <div class="field-hint" style="margin-bottom:14px">Customize how much each risk flag affects pricing. Higher = bigger multiplier.</div>
+      <div id="risk-weight-list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <button class="btn btn-amber" onclick="saveSettingsNow()">Save Settings</button>
+    <span id="settings-saved"></span>
+
+    <div class="settings-section" style="margin-top:32px">
+      <h3>Data Backup</h3>
+      <div class="field-hint" style="margin-bottom:14px">Export all jobs, customers, suppliers, vendors, materials, and settings to a JSON file. Import to restore from a backup. <strong style="color:var(--amber)">Import overwrites all current data.</strong></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-ghost" onclick="exportAllData()">Export JSON Backup</button>
+        <label class="btn btn-ghost" style="cursor:pointer;margin:0">
+          Import JSON Backup
+          <input type="file" accept=".json" style="display:none" onchange="importAllData(this)">
+        </label>
+        <span id="import-status" style="font-size:13px;color:var(--green)"></span>
+      </div>
+    </div>
+
+    <div style="margin-top:48px;padding-top:20px;border-top:1px solid var(--border)">
+      <p style="font-size:12px;color:var(--dim);font-style:italic;line-height:1.6;max-width:420px">"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."</p>
+      <p style="font-size:11px;color:var(--dim);margin-top:6px;letter-spacing:.5px">— Antoine de Saint-Exupéry</p>
+    </div>
+  </div>
+</div>
+
+<!-- INCOMPLETE ALERT MODAL -->
+<div class="modal-overlay" id="incomplete-modal">
+  <div class="modal-box">
+    <div class="modal-title">Before you save, a few things look incomplete:</div>
+    <ul class="modal-list" id="incomplete-list"></ul>
+    <div class="modal-body">Want to fill these in, or save anyway?</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="incompleteGoFix()">FILL IT IN</button>
+      <button class="btn btn-amber" onclick="incompleteProceed()">SAVE ANYWAY</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+/* ══════════════════════════════════════════════════
+   CONSTANTS
+══════════════════════════════════════════════════ */
+const TIME_OPS = [
+  {key:'setup',      label:'Setup',         perJob:true,  noOps:true, hasDesc:true},
+  {key:'program',    label:'Program',        perJob:true,  noOps:true},
+  {key:'cycle',      label:'Cycle Time',     perJob:false, noOps:true},
+  {key:'deburr',     label:'Deburr',         perJob:false, noOps:true},
+  {key:'inspect',    label:'Inspection',     perJob:false, noOps:true, hasBasis:true},
+  {key:'packhandle', label:'Pack / Handle',  perJob:false, noOps:true, hasBasis:true},
+];
+
+const RISK_FLAGS = [
+  {key:'first_art',   label:'First Article',             weight:.12},
+  {key:'tight_tol',   label:'Tight Tolerance (< .001")', weight:.10},
+  {key:'exotic_mat',  label:'Exotic Material',            weight:.09},
+  {key:'no_history',  label:'No Prior History',           weight:.08},
+  {key:'complex_geo', label:'Complex Geometry',           weight:.07},
+  {key:'cfm',         label:'Customer-Furnished Material',weight:.06},
+  {key:'itar',        label:'ITAR Controlled',            weight:.05},
+  {key:'expedite',    label:'Expedite Required',          weight:.12},
+];
+
+const OP_TYPES = ['Anodize','Hard Anodize','Chrome Plate','Zinc Plate','Nickel Plate','Heat Treat','Passivation','Powder Coat','NDT / Inspection','Painting','Black Oxide','Chem Film (Alodine)','Shot Peen','Laser Mark','Grinding','Custom'];
+
+const STOCK_TYPES = ['Per Piece','Round Bar','Square Bar','Hex Bar','Flat Bar','Plate','Sheet','Tube (Round)','Tube (Square)','Structural','Custom'];
+const STOCK_DIMENSIONS = {
+  'Round Bar':    ['1/4"','3/8"','1/2"','5/8"','3/4"','1"','1-1/4"','1-1/2"','2"','2-1/2"','3"','4"'],
+  'Square Bar':   ['1/4"','3/8"','1/2"','5/8"','3/4"','1"','1-1/4"','1-1/2"','2"','2-1/2"','3"','4"'],
+  'Hex Bar':      ['1/4"','3/8"','1/2"','5/8"','3/4"','1"','1-1/4"','1-1/2"','2"','2-1/2"'],
+  'Flat Bar':     ['1/4"x1"','1/4"x2"','1/4"x3"','3/8"x1"','3/8"x2"','1/2"x1"','1/2"x2"','3/4"x2"','1"x2"','1"x3"'],
+  'Plate':        ['1/16"','1/8"','3/16"','1/4"','3/8"','1/2"','3/4"','1"'],
+  'Sheet':        ['1/16"','1/8"','3/16"','1/4"','3/8"','1/2"'],
+  'Tube (Round)': ['1/4"OD','3/8"OD','1/2"OD','3/4"OD','1"OD','1-1/4"OD','1-1/2"OD','2"OD'],
+  'Tube (Square)':['1/2"','3/4"','1"','1-1/4"','1-1/2"','2"'],
+  'Structural':   [],
+  'Custom':       [],
+};
+const BAR_LENGTHS = ['6ft','12ft','20ft','24ft'];
+const BAR_FORM_TYPES = new Set(['Round Bar','Square Bar','Hex Bar','Flat Bar']);
+const DEFAULT_PRICE_BREAK_QTYS = [1];
+
+function stockUnit(st) {
+  if (!st) return 'lb';
+  if (st === 'Per Piece') return 'piece';
+  if (BAR_FORM_TYPES.has(st)) return 'bar';
+  if (st === 'Plate') return 'plate';
+  if (st === 'Sheet') return 'sheet';
+  if (st.startsWith('Tube')) return 'length';
+  return 'unit';
+}
+function stockQtyLabel(st) {
+  const u = stockUnit(st);
+  if (u === 'lb') return 'WEIGHT (lbs)';
+  if (u === 'piece') return 'QTY (pcs)';
+  return 'QTY ('+u+'s)';
+}
+function stockCostLabel(st) {
+  const u = stockUnit(st);
+  if (u === 'lb') return 'COST/LB ($)';
+  if (u === 'piece') return 'COST/PC ($)';
+  return 'COST/'+u.toUpperCase()+' ($)';
+}
+
+const COMMODITY_REF = {
+  '6061':    {name:'6061-T6 Aluminum',    ref:1.40},
+  '7075':    {name:'7075-T6 Aluminum',    ref:2.20},
+  '304ss':   {name:'304 Stainless Steel', ref:2.80},
+  '316ss':   {name:'316 Stainless Steel', ref:3.40},
+  '4140':    {name:'4140 Steel',          ref:0.95},
+  'ti6al4v': {name:'Ti-6Al-4V Grade 5',   ref:28.00},
+  'in718':   {name:'Inconel 718',         ref:22.00},
+  'a2tool':  {name:'A2 Tool Steel',       ref:4.50},
+  'in625':   {name:'Inconel 625',         ref:null},
+  'c360':    {name:'C360 Brass',          ref:null},
+  '2024':    {name:'2024-T4 Aluminum',    ref:null},
+  'custom':  {name:'Custom / Other',      ref:null},
+};
+
+const MAT_DISPLAY_ORDER = [
+  {key:'6061', spec:'Extruded / Plate / Bar'},
+  {key:'7075', spec:'Plate / Bar'},
+  {key:'2024', spec:'Plate'},
+  {key:'304ss', spec:'Bar / Sheet'},
+  {key:'316ss', spec:'Bar / Sheet'},
+  {key:'4140', spec:'Bar / Plate'},
+  {key:'a2tool', spec:'Bar / Ground Stock'},
+  {key:'ti6al4v', spec:'Bar / Plate'},
+  {key:'in718', spec:'Bar / Billet'},
+  {key:'in625', spec:'Bar'},
+  {key:'c360', spec:'Rod / Hex'},
+];
+
+/* ══════════════════════════════════════════════════
+   SEED DATA
+══════════════════════════════════════════════════ */
+const SEED_CUSTOMERS = [
+  {id:'c1000001', name:'Aerojet Dynamics', contact:'Robert Hennessey', phone:'617-555-0184', email:'r.hennessey@aerojetdyn.com', notes:'AS9100D certified. Requires certs on all raw material. Net 30.', createdDate:'2026-01-15'},
+  {id:'c1000002', name:'Meridian Defense', contact:'Sandra Kowalski', phone:'781-555-0237', email:'s.kowalski@meridiandef.com', notes:'ITAR program. All parts ITAR flagged. Net 45.', createdDate:'2026-01-22'},
+  {id:'c1000003', name:'TurboTech Ltd', contact:'James Okafor', phone:'508-555-0312', email:'j.okafor@turbotechltd.com', notes:'100% inspection required on first articles. Net 30.', createdDate:'2026-02-01'},
+];
+
+const SEED_JOBS = [
+  {
+    id:1000001, pn:'TI-4472-B', desc:'Titanium Mounting Bracket',
+    customerId:'c1000001', customerName:'Aerojet Dynamics', customer:'Aerojet Dynamics',
+    date:'2026-02-14', status:'WIN', qty:10, margin:42,
+    notes:'Material certs required. Call out Ti per AMS 4928. Hard anodize Type III per drawing.',
+    times:{
+      setup:  {est:45,ops:1,act:52}, program:{est:30,ops:1,act:28},
+      cycle:  {est:38,ops:1,act:41}, deburr: {est:8, ops:1,act:10},
+      inspect:{est:10,ops:1,act:12}, handle: {est:5, ops:1,act:5},
+      pack:   {est:3, ops:1,act:3},
+    },
+    mat:{key:'ti6al4v',weight:1.4,cplb:38.50,supplier:'VSMPO-AVISMA',lead:'3-4 weeks'},
+    outsideProcs:[{process:'Hard Anodize',vendor:'AAC Surface Tech',cost:65.00,lead:'7-10 days',notes:'Type III, Class 2'}],
+    flags:['tight_tol','exotic_mat','itar'],
+    sellPc:847.50, extended:8475.00,
+  },
+  {
+    id:1000002, pn:'SS-2291-A', desc:'316 SS Hydraulic Fitting',
+    customer:'Fluid Systems Inc',
+    date:'2026-02-28', status:'WIN', qty:50, margin:38,
+    notes:'316L preferred. Surface finish 32 Ra on sealing surfaces.',
+    times:{
+      setup:  {est:20,ops:1,act:18}, program:{est:15,ops:1,act:15},
+      cycle:  {est:12,ops:1,act:11}, deburr: {est:4, ops:1,act:4},
+      inspect:{est:5, ops:1,act:5},  handle: {est:2, ops:1,act:2},
+      pack:   {est:2, ops:1,act:2},
+    },
+    mat:{key:'316ss',weight:0.6,cplb:5.60,supplier:'Ryerson',lead:'5-7 days'},
+    outsideProcs:[{process:'Passivation',vendor:'Northeast Surface',cost:8.50,lead:'3-5 days',notes:'Per ASTM A967'}],
+    flags:[],
+    sellPc:124.00, extended:6200.00,
+  },
+  {
+    id:1000003, pn:'AL-8801-C', desc:'6061-T6 Aluminum Housing',
+    customerId:'c1000002', customerName:'Meridian Defense', customer:'Meridian Defense',
+    date:'2026-03-01', status:'WIN', qty:25, margin:40,
+    notes:'Hard anodize Type III per MIL-A-8625. ITAR flagged — confirm export compliance.',
+    times:{
+      setup:  {est:60,ops:1,act:65}, program:{est:45,ops:1,act:43},
+      cycle:  {est:28,ops:2,act:32}, deburr: {est:10,ops:1,act:12},
+      inspect:{est:12,ops:1,act:11}, handle: {est:4, ops:1,act:4},
+      pack:   {est:4, ops:1,act:4},
+    },
+    mat:{key:'6061',weight:2.2,cplb:3.85,supplier:'Metals USA',lead:'3-5 days'},
+    outsideProcs:[{process:'Hard Anodize',vendor:'AAC Surface Tech',cost:42.00,lead:'7-10 days',notes:'MIL-A-8625 Type III'}],
+    flags:['itar'],
+    sellPc:312.00, extended:7800.00,
+  },
+  {
+    id:1000004, pn:'IN-3312-A', desc:'Inconel 718 Turbine Spacer',
+    customerId:'c1000003', customerName:'TurboTech Ltd', customer:'TurboTech Ltd',
+    date:'2026-03-05', status:'WIN', qty:5, margin:45,
+    notes:'AMS 5596. Final grind to print. 100% dimensional inspection required.',
+    times:{
+      setup:  {est:90,ops:1,act:95}, program:{est:60,ops:1,act:58},
+      cycle:  {est:72,ops:1,act:78}, deburr: {est:15,ops:1,act:18},
+      inspect:{est:30,ops:1,act:35}, handle: {est:5, ops:1,act:5},
+      pack:   {est:5, ops:1,act:5},
+    },
+    mat:{key:'in718',weight:3.8,cplb:68.00,supplier:'Special Metals',lead:'6-8 weeks'},
+    outsideProcs:[{process:'NDT / Inspection',vendor:'Acuity NDT',cost:185.00,lead:'5-7 days',notes:'FPI per ASTM E1417'}],
+    flags:['tight_tol','exotic_mat','first_art'],
+    sellPc:1240.00, extended:6200.00,
+  },
+];
+
+/* ══════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════ */
+let settings = {shopName:'Your Shop', rate:125, defaultMargin:40, defaultMatMarkup:20, defaultOpMarkup:0, defaultOverhead:0, phone:'', email:'', jobNumPrefix:'', machines:[], riskWeights:{}};
+let _nreOpen = false;
+let jobCounter = 0;
+let jobs = [];
+let matOverrides = {};
+let customers = [];
+let suppliers  = [];
+let vendors    = [];
+let currentJobId = null;
+let currentQty = 1;
+let activeFlags = new Set();
+let packHandleLot  = false;
+let inspectLot     = false;
+let recallData = null;
+let autoSaveTimer = null;
+let histFilter = 'all';
+let histSearch = '';
+let histSortCol = 'date';
+let histSortDir = -1; // -1 = descending (newest first)
+let custSearch = '';
+let currentCustomerId = null;
+let selectedCustomerId = null;
+let sidebarSearch = '';       // v5: quick search
+let _pendingSaveAction = null; // v5: incomplete alert modal deferred action
+let priceBreakQtys = DEFAULT_PRICE_BREAK_QTYS.slice();
+
+/* ══════════════════════════════════════════════════
+   LOCALSTORAGE
+══════════════════════════════════════════════════ */
+function loadStorage() {
+  try {
+    const s = localStorage.getItem('cs_settings');
+    if (s) settings = {...settings, ...JSON.parse(s)};
+    const j = localStorage.getItem('cs_jobs');
+    if (j) jobs = JSON.parse(j);
+    const m = localStorage.getItem('cs_matlib');
+    if (m) matOverrides = JSON.parse(m);
+    const c = localStorage.getItem('cs_customers');
+    if (c) customers = JSON.parse(c);
+    const sp = localStorage.getItem('cs_suppliers');
+    if (sp) suppliers = JSON.parse(sp);
+    const vd = localStorage.getItem('cs_vendors');
+    if (vd) vendors = JSON.parse(vd);
+    const cnt = localStorage.getItem('cs_job_counter');
+    jobCounter = cnt ? (parseInt(cnt)||1000) : 1000;
+  } catch(e) {}
+
+  // Seed jobs on first open
+  if (!localStorage.getItem('cs_seeded')) {
+    jobs = SEED_JOBS.slice();
+    saveJobsToStorage();
+    localStorage.setItem('cs_seeded','1');
+  }
+
+  // Seed customers on first open
+  if (!localStorage.getItem('cs_cust_seeded')) {
+    customers = SEED_CUSTOMERS.slice();
+    saveCustomers();
+    localStorage.setItem('cs_cust_seeded','1');
+  }
+}
+
+function saveJobsToStorage() {
+  try { localStorage.setItem('cs_jobs', JSON.stringify(jobs)); } catch(e) {}
+}
+function saveMatOverrides() {
+  try { localStorage.setItem('cs_matlib', JSON.stringify(matOverrides)); } catch(e) {}
+}
+function saveSettingsToStorage() {
+  try { localStorage.setItem('cs_settings', JSON.stringify(settings)); } catch(e) {}
+}
+function saveCustomers() {
+  try { localStorage.setItem('cs_customers', JSON.stringify(customers)); } catch(e) {}
+}
+function saveSuppliers() {
+  try { localStorage.setItem('cs_suppliers', JSON.stringify(suppliers)); } catch(e) {}
+  buildSupplierDropdown();
+}
+function saveVendors() {
+  try { localStorage.setItem('cs_vendors', JSON.stringify(vendors)); } catch(e) {}
+  rebuildOpVendorDropdowns();
+}
+
+/* ── SUPPLIERS ── */
+let selectedSupplierId = null;
+
+function addSupplier() {
+  const s = {id:'s'+Date.now(), name:'New Supplier', contact:'', phone:'', email:'', materials:'', notes:''};
+  suppliers.push(s);
+  saveSuppliers();
+  buildSupplierList();
+  showSupplierDetail(s.id);
+}
+
+function buildSupplierDropdown(selectedVal) {
+  const sel = document.getElementById('mat-supplier');
+  if (!sel) return;
+  const cur = selectedVal !== undefined ? selectedVal : sel.value;
+  sel.innerHTML = '<option value="">— Select Supplier —</option>'
+    + suppliers.map(s => `<option value="${esc(s.name)}"${s.name===cur?' selected':''}>${esc(s.name)}</option>`).join('')
+    + '<option value="__add__">+ Add Supplier…</option>';
+  if (cur && cur !== '__add__' && suppliers.some(s => s.name === cur)) sel.value = cur;
+}
+
+function matSupplierChanged() {
+  if (document.getElementById('mat-supplier').value === '__add__') {
+    document.getElementById('mat-supplier').value = '';
+    showTab('suppliers');
+  }
+}
+
+function buildSupplierList() {
+  const q = (document.getElementById('supp-search')?.value||'').toLowerCase();
+  const filtered = suppliers.filter(s => !q || s.name.toLowerCase().includes(q) || (s.materials||'').toLowerCase().includes(q));
+  filtered.sort((a,b) => a.name.localeCompare(b.name));
+  document.getElementById('supp-list').innerHTML = filtered.map(s => `
+    <div class="cust-list-item${selectedSupplierId===s.id?' selected':''}" onclick="showSupplierDetail('${s.id}')">
+      <div class="cust-list-name">${esc(s.name)}</div>
+      <div class="cust-list-contact">${esc(s.contact||'—')}</div>
+      ${s.materials ? `<div class="cust-list-stats">${esc(s.materials)}</div>` : ''}
+    </div>`).join('') || '<div style="padding:16px;font-size:13px;color:var(--dim)">No suppliers yet.</div>';
+}
+
+function showSupplierDetail(id) {
+  selectedSupplierId = id;
+  buildSupplierList();
+  const s = suppliers.find(s => s.id === id);
+  if (!s) return;
+  document.getElementById('supp-empty').style.display = 'none';
+  const detail = document.getElementById('supp-detail');
+  detail.style.display = 'block';
+  detail.innerHTML = `
+    <div class="cust-header">
+      <div class="cust-header-name">${esc(s.name)}</div>
+      <button class="btn btn-danger btn-sm" onclick="deleteSupplier('${s.id}')">Delete</button>
+    </div>
+    <div class="cust-fields">
+      <div class="cust-field-group"><label>NAME</label><input type="text" value="${esc(s.name)}" onchange="saveSupplierField('${s.id}','name',this.value)" placeholder="Company name"></div>
+      <div class="cust-field-group"><label>CONTACT</label><input type="text" value="${esc(s.contact||'')}" onchange="saveSupplierField('${s.id}','contact',this.value)" placeholder="Contact name"></div>
+      <div class="cust-field-group"><label>PHONE</label><input type="text" value="${esc(s.phone||'')}" onchange="saveSupplierField('${s.id}','phone',this.value)" placeholder="Phone"></div>
+      <div class="cust-field-group"><label>EMAIL</label><input type="text" value="${esc(s.email||'')}" onchange="saveSupplierField('${s.id}','email',this.value)" placeholder="Email"></div>
+      <div class="cust-field-group"><label>MATERIALS SUPPLIED</label><input type="text" value="${esc(s.materials||'')}" onchange="saveSupplierField('${s.id}','materials',this.value)" placeholder="e.g. Aluminum bar, Stainless plate"></div>
+      <div class="cust-field-group"><label>NOTES</label><textarea onchange="saveSupplierField('${s.id}','notes',this.value)" style="height:70px;font-size:13px">${esc(s.notes||'')}</textarea></div>
+    </div>`;
+}
+
+function saveSupplierField(id, field, val) {
+  const s = suppliers.find(s => s.id === id);
+  if (!s) return;
+  s[field] = val;
+  saveSuppliers();
+  buildSupplierList();
+}
+
+function deleteSupplier(id) {
+  if (!confirm('Delete this supplier?')) return;
+  suppliers = suppliers.filter(s => s.id !== id);
+  saveSuppliers();
+  selectedSupplierId = null;
+  document.getElementById('supp-detail').style.display = 'none';
+  document.getElementById('supp-empty').style.display = '';
+  buildSupplierList();
+}
+
+/* ── VENDORS ── */
+let selectedVendorId = null;
+
+function addVendor() {
+  const v = {id:'v'+Date.now(), name:'New Vendor', contact:'', phone:'', email:'', processes:'', notes:''};
+  vendors.push(v);
+  saveVendors();
+  buildVendorList();
+  showVendorDetail(v.id);
+}
+
+function buildVendorList() {
+  const q = (document.getElementById('vend-search')?.value||'').toLowerCase();
+  const filtered = vendors.filter(v => !q || v.name.toLowerCase().includes(q) || (v.processes||'').toLowerCase().includes(q));
+  filtered.sort((a,b) => a.name.localeCompare(b.name));
+  document.getElementById('vend-list').innerHTML = filtered.map(v => `
+    <div class="cust-list-item${selectedVendorId===v.id?' selected':''}" onclick="showVendorDetail('${v.id}')">
+      <div class="cust-list-name">${esc(v.name)}</div>
+      <div class="cust-list-contact">${esc(v.contact||'—')}</div>
+      ${v.processes ? `<div class="cust-list-stats">${esc(v.processes)}</div>` : ''}
+    </div>`).join('') || '<div style="padding:16px;font-size:13px;color:var(--dim)">No vendors yet.</div>';
+}
+
+function showVendorDetail(id) {
+  selectedVendorId = id;
+  buildVendorList();
+  const v = vendors.find(v => v.id === id);
+  if (!v) return;
+  document.getElementById('vend-empty').style.display = 'none';
+  const detail = document.getElementById('vend-detail');
+  detail.style.display = 'block';
+  detail.innerHTML = `
+    <div class="cust-header">
+      <div class="cust-header-name">${esc(v.name)}</div>
+      <button class="btn btn-danger btn-sm" onclick="deleteVendor('${v.id}')">Delete</button>
+    </div>
+    <div class="cust-fields">
+      <div class="cust-field-group"><label>NAME</label><input type="text" value="${esc(v.name)}" onchange="saveVendorField('${v.id}','name',this.value)" placeholder="Company name"></div>
+      <div class="cust-field-group"><label>CONTACT</label><input type="text" value="${esc(v.contact||'')}" onchange="saveVendorField('${v.id}','contact',this.value)" placeholder="Contact name"></div>
+      <div class="cust-field-group"><label>PHONE</label><input type="text" value="${esc(v.phone||'')}" onchange="saveVendorField('${v.id}','phone',this.value)" placeholder="Phone"></div>
+      <div class="cust-field-group"><label>EMAIL</label><input type="text" value="${esc(v.email||'')}" onchange="saveVendorField('${v.id}','email',this.value)" placeholder="Email"></div>
+      <div class="cust-field-group"><label>PROCESSES</label><input type="text" value="${esc(v.processes||'')}" onchange="saveVendorField('${v.id}','processes',this.value)" placeholder="e.g. Anodize, Hard coat, Passivation"></div>
+      <div class="cust-field-group"><label>NOTES</label><textarea onchange="saveVendorField('${v.id}','notes',this.value)" style="height:70px;font-size:13px">${esc(v.notes||'')}</textarea></div>
+    </div>`;
+}
+
+function saveVendorField(id, field, val) {
+  const v = vendors.find(v => v.id === id);
+  if (!v) return;
+  v[field] = val;
+  saveVendors();
+  buildVendorList();
+}
+
+function deleteVendor(id) {
+  if (!confirm('Delete this vendor?')) return;
+  vendors = vendors.filter(v => v.id !== id);
+  saveVendors();
+  selectedVendorId = null;
+  document.getElementById('vend-detail').style.display = 'none';
+  document.getElementById('vend-empty').style.display = '';
+  buildVendorList();
+}
+
+function saveDraft() {
+  try {
+    const d = collectFormData();
+    d._currentJobId = currentJobId;
+    d._currentCustomerId = currentCustomerId;
+    localStorage.setItem('cs_draft', JSON.stringify(d));
+    flashAutosave();
+  } catch(e) {}
+}
+
+function loadDraft() {
+  try {
+    const d = localStorage.getItem('cs_draft');
+    if (d) {
+      const parsed = JSON.parse(d);
+      currentJobId = parsed._currentJobId || null;
+      currentCustomerId = parsed._currentCustomerId || null;
+      populateForm(parsed);
+    }
+  } catch(e) {}
+}
+
+function flashAutosave() {
+  const dot = document.getElementById('autosave-dot');
+  dot.classList.add('saved');
+  clearTimeout(dot._t);
+  dot._t = setTimeout(() => dot.classList.remove('saved'), 1800);
+}
+
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveDraft, 600);
+}
+
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  loadStorage();
+  applySettings();
+  buildTimeStack();
+  buildMachineList();
+  buildSupplierDropdown();
+  buildRiskFlags();
+  buildRiskWeightSettings();
+  _initStockTypeDropdown(); // populate stock type select on load
+  buildSidebar();
+  buildHistory();
+  buildCustomerList();
+  buildMatLibrary();
+  loadDraft();
+  calcAll();
+});
+
+/* ══════════════════════════════════════════════════
+   TAB NAVIGATION
+══════════════════════════════════════════════════ */
+function showTab(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  const tabs = {quote:0, history:1, customers:2, suppliers:3, vendors:4, materials:5, settings:6};
+  document.querySelectorAll('.tab-btn')[tabs[id]].classList.add('active');
+  if (id === 'history') buildHistory();
+  if (id === 'customers') buildCustomerList();
+  if (id === 'suppliers') buildSupplierList();
+  if (id === 'vendors') buildVendorList();
+  if (id === 'materials') buildMatLibrary();
+}
+
+/* ══════════════════════════════════════════════════
+   TIME STACK
+══════════════════════════════════════════════════ */
+function getBasisState(key) {
+  if (key === 'packhandle') return packHandleLot;
+  if (key === 'inspect')    return inspectLot;
+  return false;
+}
+
+function buildTimeStack() {
+  document.getElementById('time-tbody').innerHTML = TIME_OPS.map(op => {
+    const basisOn  = op.hasBasis ? getBasisState(op.key) : false;
+    const isPerJob = op.hasBasis ? basisOn : op.perJob;
+    const extras = (op.hasDesc
+      ? `<input type="text" id="ts-${op.key}-desc" placeholder="Description…" oninput="scheduleAutoSave()" style="width:100%;font-size:12px;padding:3px 6px;background:var(--surf);border:1px solid var(--border);border-radius:3px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:4px">`
+      : '') + (op.hasBasis
+      ? `<button id="ts-${op.key}-basis" onclick="toggleBasis('${op.key}')" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;padding:3px 10px;cursor:pointer;border:2px solid var(--border-hi);border-radius:3px;background:var(--surf-hi);color:${basisOn?'var(--amber)':'var(--muted)'};" title="EA = per piece · LOT = flat charge for whole job">${basisOn?'LOT':'EA'}</button>`
+      : '');
+    const machineSelect = `<select class="ts-machine-sel" id="ts-${op.key}-machine" data-key="${op.key}" onchange="calcAll();scheduleAutoSave()" style="font-size:12px;padding:3px 6px;background:var(--surf);border:1px solid var(--border);border-radius:3px;color:var(--muted);width:100%;margin-top:${extras?'4px':'0'}">${buildMachineOptions('')}</select>`;
+    return `<tr>
+      <td>${op.label}</td>
+      <td style="text-align:right">
+        <input type="number" id="ts-${op.key}" value="0" min="0" step="${isPerJob?'1':'0.5'}" oninput="calcAll();scheduleAutoSave()" style="width:80px">
+        <span class="ts-unit" id="ts-${op.key}-unit">${isPerJob ? 'per job' : 'per piece'}</span>
+      </td>
+      <td style="min-width:160px;padding:4px 8px">${extras}${machineSelect}</td>
+      <td class="calc" id="ts-${op.key}-cost">$0.00</td>
+      <td style="text-align:right"><input type="number" id="ts-${op.key}-act" placeholder="—" min="0" step="0.5" oninput="scheduleAutoSave()" class="ts-act"></td>
+    </tr>`;
+  }).join('');
+}
+
+function paymentTermsChanged() {
+  const val = document.getElementById('payment-terms-select').value;
+  const el  = document.getElementById('payment-terms-custom');
+  if (el) { el.style.display = val === 'Custom' ? '' : 'none'; if (val !== 'Custom') el.value = ''; }
+}
+
+function toggleBasis(key) {
+  if (key === 'packhandle') packHandleLot = !packHandleLot;
+  if (key === 'inspect')    inspectLot    = !inspectLot;
+  const on   = getBasisState(key);
+  const btn  = document.getElementById('ts-'+key+'-basis');
+  const unit = document.getElementById('ts-'+key+'-unit');
+  if (btn)  { btn.textContent = on ? 'LOT' : 'EA'; btn.style.color = on ? 'var(--amber)' : 'var(--muted)'; }
+  if (unit) unit.textContent = on ? 'per job' : 'per piece';
+  calcAll(); scheduleAutoSave();
+}
+
+function getTimeMins(key) {
+  const el = document.getElementById('ts-'+key);
+  return el ? parseFloat(el.value)||0 : 0;
+}
+function getOps(key) {
+  const el = document.getElementById('ts-'+key+'-ops');
+  return el ? Math.max(1, parseInt(el.value)||1) : 1;
+}
+
+/* ══════════════════════════════════════════════════
+   RISK ENGINE
+══════════════════════════════════════════════════ */
+function buildRiskFlags() {
+  document.getElementById('risk-flags').innerHTML = RISK_FLAGS.map(f => `
+    <div class="risk-flag" id="flag-${f.key}" onclick="toggleFlag('${f.key}')">
+      <div class="risk-flag-check" id="check-${f.key}"></div>
+      <div class="risk-flag-label">${f.label}</div>
+      <div class="risk-flag-weight">+${(f.weight*100).toFixed(0)}%</div>
+    </div>
+  `).join('');
+}
+
+function toggleFlag(key) {
+  if (activeFlags.has(key)) {
+    activeFlags.delete(key);
+    document.getElementById('flag-'+key).classList.remove('active');
+    document.getElementById('check-'+key).textContent = '';
+  } else {
+    activeFlags.add(key);
+    document.getElementById('flag-'+key).classList.add('active');
+    document.getElementById('check-'+key).textContent = '✓';
+  }
+  calcAll(); scheduleAutoSave();
+}
+
+function getFlagWeight(key, defaultWeight) {
+  const w = settings.riskWeights?.[key];
+  return (w !== undefined && w !== null) ? w / 100 : defaultWeight;
+}
+
+function getRiskMultiplier(qty) {
+  let w = 0;
+  RISK_FLAGS.forEach(f => { if (activeFlags.has(f.key)) w += getFlagWeight(f.key, f.weight); });
+  return 1 + w * (1 / Math.sqrt(Math.max(1, qty)));
+}
+
+function getMachineRate(key) {
+  const sel = document.getElementById('ts-'+key+'-machine');
+  if (!sel || !sel.value) return settings.rate || 125;
+  const m = (settings.machines||[]).find(m => m.id === sel.value);
+  return m ? m.rate : (settings.rate || 125);
+}
+
+function buildMachineOptions(selectedId) {
+  const machines = settings.machines || [];
+  return `<option value="">Shop Rate ($${settings.rate||125}/hr)</option>`
+    + machines.map(m => `<option value="${m.id}"${m.id===selectedId?' selected':''}>${esc(m.name)} — $${m.rate}/hr</option>`).join('');
+}
+
+function buildMachineList() {
+  const machines = settings.machines || [];
+  document.getElementById('machine-list').innerHTML = machines.length === 0
+    ? '<div style="font-size:13px;color:var(--dim);font-style:italic">No machines added yet — using shop rate for all rows.</div>'
+    : machines.map((m, i) => `
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" value="${esc(m.name)}" placeholder="Machine name" onchange="updateMachine(${i},'name',this.value)" style="flex:1;font-size:14px;padding:5px 8px">
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap">$</span>
+        <input type="number" value="${m.rate}" min="1" step="1" onchange="updateMachine(${i},'rate',this.value)" style="width:90px;font-size:14px;padding:5px 8px">
+        <span style="font-size:12px;color:var(--dim)">/hr</span>
+        <button onclick="removeMachine(${i})" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px;padding:0 4px">×</button>
+      </div>`).join('');
+  // Rebuild machine dropdowns in time stack
+  document.querySelectorAll('.ts-machine-sel').forEach(sel => {
+    const key = sel.dataset.key;
+    const cur = sel.value;
+    sel.innerHTML = buildMachineOptions(cur);
+  });
+}
+
+function addMachine() {
+  if (!settings.machines) settings.machines = [];
+  settings.machines.push({id: 'mach_'+Date.now(), name: '', rate: settings.rate || 125});
+  buildMachineList();
+}
+
+function updateMachine(i, field, val) {
+  if (!settings.machines?.[i]) return;
+  settings.machines[i][field] = field === 'rate' ? (parseFloat(val)||125) : val;
+  buildMachineList();
+  calcAll();
+}
+
+function removeMachine(i) {
+  settings.machines.splice(i, 1);
+  buildMachineList();
+  calcAll();
+}
+
+function buildRiskWeightSettings() {
+  document.getElementById('risk-weight-list').innerHTML = RISK_FLAGS.map(f => {
+    const pct = Math.round((getFlagWeight(f.key, f.weight)) * 100);
+    return `<div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;color:var(--text);flex:1">${f.label}</span>
+      <input type="number" id="rw-${f.key}" value="${pct}" min="0" max="100" step="1" style="width:70px;text-align:center;font-size:14px;padding:4px 8px" oninput="updateRiskWeight('${f.key}',this.value)">
+      <span style="font-size:13px;color:var(--muted)">%</span>
+    </div>`;
+  }).join('');
+}
+
+function updateRiskWeight(key, val) {
+  if (!settings.riskWeights) settings.riskWeights = {};
+  settings.riskWeights[key] = parseFloat(val)||0;
+  // Update the displayed weight on the risk flag
+  const flagEl = document.getElementById('flag-'+key);
+  if (flagEl) { const wEl = flagEl.querySelector('.risk-flag-weight'); if (wEl) wEl.textContent = '+'+val+'%'; }
+  calcAll();
+}
+
+function buildVolPresets() {
+  const containers = ['vol-presets', 'vol-presets-top'];
+  containers.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isTop = id === 'vol-presets-top';
+    el.innerHTML = priceBreakQtys.map((q, i) => `
+      <span style="display:inline-flex;align-items:center;gap:0">
+        <button class="vol-preset${q === currentQty ? ' active' : ''}" onclick="setVol(${q})">${q}</button>${isTop
+          ? `<button onclick="removeQtyBreak(${i})" title="Remove" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 5px;line-height:1;margin-left:-2px">×</button>`
+          : ''}
+      </span>`).join('');
+  });
+}
+
+function removeQtyBreak(index) {
+  if (priceBreakQtys.length <= 1) return;
+  const removed = priceBreakQtys[index];
+  priceBreakQtys.splice(index, 1);
+  if (currentQty === removed) setVol(priceBreakQtys[0]);
+  buildVolPresets();
+  buildPriceBreaksTable();
+  scheduleAutoSave();
+}
+
+function addQtyFromTop() {
+  const input = document.getElementById('qty-add-top');
+  const qty = parseInt(input.value);
+  if (!qty || qty < 1) return;
+  if (!priceBreakQtys.includes(qty)) {
+    priceBreakQtys.push(qty);
+    priceBreakQtys.sort((a, b) => a - b);
+  }
+  input.value = '';
+  buildVolPresets();
+  buildPriceBreaksTable();
+  scheduleAutoSave();
+}
+
+function setVol(qty) {
+  currentQty = qty;
+  document.getElementById('qty-input').value = qty;
+  const topInput = document.getElementById('qty-input-top');
+  if (topInput) topInput.value = qty;
+  buildVolPresets();
+  calcAll(); scheduleAutoSave();
+}
+function updateVol(v) {
+  currentQty = parseInt(v)||1;
+  document.getElementById('qty-input').value = currentQty;
+  const topInput = document.getElementById('qty-input-top');
+  if (topInput && topInput !== document.activeElement) topInput.value = currentQty;
+  buildVolPresets();
+  calcAll(); scheduleAutoSave();
+}
+
+function updateRiskDisplay(mult) {
+  const el  = document.getElementById('risk-mult-display');
+  const bar = document.getElementById('risk-bar');
+  const lbl = document.getElementById('risk-level-label');
+  el.textContent = mult.toFixed(2)+'×';
+  bar.style.width = Math.min(100,(mult-1)*250)+'%';
+  if (mult < 1.10) {
+    el.className='risk-multiplier green'; bar.style.background='var(--green)'; lbl.textContent='LOW RISK';
+  } else if (mult < 1.25) {
+    el.className='risk-multiplier amber'; bar.style.background='var(--amber)'; lbl.textContent='MODERATE RISK';
+  } else {
+    el.className='risk-multiplier red'; bar.style.background='var(--red)'; lbl.textContent='HIGH RISK';
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   OUTSIDE PROCESSES
+══════════════════════════════════════════════════ */
+function vendorDropdownOptions(selected) {
+  return '<option value="">— Vendor —</option>'
+    + vendors.map(v => `<option value="${esc(v.name)}"${v.name===selected?' selected':''}>${esc(v.name)}</option>`).join('')
+    + `<option value="__add__">+ Add Vendor…</option>`;
+}
+
+function rebuildOpVendorDropdowns() {
+  document.querySelectorAll('#op-tbody .op-vendor-sel').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = vendorDropdownOptions(cur);
+    if (cur && cur !== '__add__') sel.value = cur;
+  });
+}
+
+function addOpRow(process='', vendor='', cost=0, lead='', notes='', basis='EA') {
+  const tbody = document.getElementById('op-tbody');
+  const row = document.createElement('tr');
+  row.dataset.basis = basis;
+  row.innerHTML = `
+    <td><select onchange="calcAll();scheduleAutoSave()" style="width:100%">
+      ${OP_TYPES.map(t => `<option${t===process?' selected':''}>${t}</option>`).join('')}
+    </select></td>
+    <td><select class="op-vendor-sel" onchange="opVendorChanged(this);scheduleAutoSave()" style="width:100%">${vendorDropdownOptions(vendor)}</select></td>
+    <td style="text-align:center"><button class="btn btn-ghost btn-xs op-basis-btn" onclick="toggleOpBasis(this)" title="EA = per piece · LOT = divide cost by quantity">${basis}</button></td>
+    <td class="op-cost"><input type="number" value="${cost||''}" placeholder="0.00" step="0.01" min="0" oninput="calcAll();scheduleAutoSave()" style="text-align:right;width:88px"></td>
+    <td><input type="text" value="${lead}" placeholder="e.g. 5-7 days" oninput="scheduleAutoSave()" style="width:82px"></td>
+    <td><input type="text" value="${notes}" placeholder="Notes..." oninput="scheduleAutoSave()"></td>
+    <td><button class="btn btn-danger btn-xs" onclick="this.closest('tr').remove();calcAll();scheduleAutoSave()">✕</button></td>
+  `;
+  tbody.appendChild(row);
+  calcAll();
+}
+
+function opVendorChanged(sel) {
+  if (sel.value === '__add__') {
+    sel.value = '';
+    showTab('vendors');
+  }
+}
+
+function toggleOpBasis(btn) {
+  const row  = btn.closest('tr');
+  const next = (row.dataset.basis || 'EA') === 'EA' ? 'LOT' : 'EA';
+  row.dataset.basis = next;
+  btn.textContent   = next;
+  calcAll();
+  scheduleAutoSave();
+}
+
+function getOpTotal(qty) {
+  let total = 0;
+  document.querySelectorAll('#op-tbody tr').forEach(r => {
+    const inp   = r.querySelector('input[type=number]');
+    const basis = r.dataset.basis || 'EA';
+    if (inp) {
+      const cost = parseFloat(inp.value)||0;
+      total += basis === 'LOT' ? cost / Math.max(1, qty) : cost;
+    }
+  });
+  return total;
+}
+
+/* ══════════════════════════════════════════════════
+   MAIN CALC
+══════════════════════════════════════════════════ */
+function calcAll() {
+  const qty  = currentQty;
+  const rate = settings.rate;
+
+  // Labor + track total labor minutes for overhead calc
+  let laborCost = 0, laborMins = 0;
+  TIME_OPS.forEach(op => {
+    const mins    = getTimeMins(op.key);
+    const opRate  = getMachineRate(op.key);
+    const isPerJob = op.hasBasis ? getBasisState(op.key) : op.perJob;
+    const costPc = isPerJob ? (mins/60) * opRate / Math.max(1,qty) : (mins/60) * opRate;
+    laborCost += costPc;
+    laborMins += isPerJob ? mins / Math.max(1,qty) : mins;
+    const el = document.getElementById('ts-'+op.key+'-cost');
+    if (el) el.textContent = '$'+costPc.toFixed(2);
+  });
+  document.getElementById('total-labor-cost').textContent = '$'+laborCost.toFixed(2);
+
+  // Overhead
+  const overheadRate = parseFloat(document.getElementById('overhead-input').value)||0;
+  const overheadCost = (laborMins/60) * overheadRate;
+  document.getElementById('sum-overhead').textContent = '$'+overheadCost.toFixed(2);
+  document.getElementById('row-overhead').style.display = overheadCost > 0 ? '' : 'none';
+
+  // Material
+  const matWeight    = parseFloat(document.getElementById('mat-weight').value)||0;
+  const matCplb      = parseFloat(document.getElementById('mat-cplb').value)||0;
+  const matMarkupPct = parseFloat(document.getElementById('mat-markup').value)||0;
+  const matIsPerPiece = document.getElementById('mat-stock-type').value === 'Per Piece';
+  const matCostRaw   = matIsPerPiece ? matCplb : matWeight * matCplb;
+  const matMarkupAmt = matCostRaw * (matMarkupPct / 100);
+  const matCostCustomer = matCostRaw + matMarkupAmt;
+  document.getElementById('mat-total').textContent        = '$'+matCostCustomer.toFixed(2);
+  document.getElementById('sum-mat-raw').textContent      = '$'+matCostRaw.toFixed(2);
+  document.getElementById('sum-mat-markup').textContent   = '+$'+matMarkupAmt.toFixed(2);
+  document.getElementById('row-mat-markup').style.display = matMarkupAmt > 0 ? '' : 'none';
+
+  // Outside processes + markup
+  const opRaw        = getOpTotal(qty);
+  const opMarkupPct  = parseFloat(document.getElementById('op-markup-input').value)||0;
+  const opMarkupAmt  = opRaw * (opMarkupPct / 100);
+  const opTotal      = opRaw + opMarkupAmt;
+  document.getElementById('op-total').textContent         = '$'+opRaw.toFixed(2);
+  document.getElementById('sum-op-raw').textContent       = '$'+opRaw.toFixed(2);
+  document.getElementById('sum-op-markup').textContent    = '+$'+opMarkupAmt.toFixed(2);
+  document.getElementById('row-op-markup').style.display  = opMarkupAmt > 0 ? '' : 'none';
+
+  // Assembly
+  const asmHrs  = parseFloat(document.getElementById('asm-hours').value)||0;
+  const asmCost = asmHrs * rate;
+  document.getElementById('asm-rate-display').textContent = '$'+rate+'/hr';
+  document.getElementById('asm-cost-display').textContent = '$'+asmCost.toFixed(2);
+  document.getElementById('sum-asm').textContent          = '$'+asmCost.toFixed(2);
+  document.getElementById('row-asm').style.display        = asmCost > 0 ? '' : 'none';
+
+  // NRE
+  const nreTotal   = getNreTotal();
+  const nreSep     = getNreSeparate();
+  const nrePc      = (!nreSep && nreTotal > 0) ? nreTotal / Math.max(1, qty) : 0;
+  const nreTotalEl = document.getElementById('nre-total-display');
+  if (nreTotalEl) nreTotalEl.textContent = '$'+nreTotal.toFixed(2);
+  document.getElementById('sum-nre').textContent    = '$'+nrePc.toFixed(2);
+  document.getElementById('row-nre').style.display  = nrePc > 0 ? '' : 'none';
+  const modeNote = document.getElementById('nre-mode-note');
+  if (modeNote) modeNote.textContent = nreSep
+    ? 'Shown as separate one-time charge on customer quote'
+    : (nreTotal > 0 ? `Amortized: $${(nreTotal/Math.max(1,qty)).toFixed(2)}/pc at qty ${qty}` : 'Baked in — amortized into unit price by quantity');
+
+  const riskMult = getRiskMultiplier(qty);
+  updateRiskDisplay(riskMult);
+
+  const rawCost  = laborCost + overheadCost + matCostCustomer + opTotal + asmCost + nrePc;
+  const adjCost  = rawCost * riskMult;
+  const margin   = Math.min(95, parseFloat(document.getElementById('margin-input').value)||40)/100;
+  const shippingCost = parseFloat(document.getElementById('shipping-cost')?.value)||0;
+  const shipDisplay  = document.getElementById('shipping-cost-display');
+  if (shipDisplay) shipDisplay.textContent = '$'+shippingCost.toFixed(2);
+  const sellPc   = margin >= 1 ? adjCost : adjCost / (1 - margin);
+  const extended = sellPc * qty;
+
+  document.getElementById('sum-labor').textContent    = '$'+laborCost.toFixed(2);
+  document.getElementById('sum-raw').textContent      = '$'+rawCost.toFixed(2);
+  document.getElementById('sum-risk').textContent     = riskMult.toFixed(2)+'×';
+  document.getElementById('sum-adj').textContent      = '$'+adjCost.toFixed(2);
+  document.getElementById('sum-sell').textContent     = '$'+sellPc.toFixed(2);
+  document.getElementById('margin-display').textContent = Math.round(margin*100)+'% GM';
+  buildPriceBreaksTable();
+}
+
+/* ══════════════════════════════════════════════════
+   PRICE BREAKS TABLE + ASSEMBLY STUB
+══════════════════════════════════════════════════ */
+function calcForQty(q) {
+  const rate = settings.rate;
+  let laborCost = 0, laborMins = 0;
+  TIME_OPS.forEach(op => {
+    const mins    = getTimeMins(op.key);
+    const opRate  = getMachineRate(op.key);
+    const isPerJob = op.hasBasis ? getBasisState(op.key) : op.perJob;
+    laborCost += isPerJob ? (mins/60)*opRate / Math.max(1,q) : (mins/60)*opRate;
+    laborMins += isPerJob ? mins / Math.max(1,q) : mins;
+  });
+  const overheadRate    = parseFloat(document.getElementById('overhead-input').value)||0;
+  const overheadCost    = (laborMins/60) * overheadRate;
+  const matWeight       = parseFloat(document.getElementById('mat-weight').value)||0;
+  const matCplb         = parseFloat(document.getElementById('mat-cplb').value)||0;
+  const matMarkupPct    = parseFloat(document.getElementById('mat-markup').value)||0;
+  const matIsPerPiece2  = document.getElementById('mat-stock-type').value === 'Per Piece';
+  const matCostCustomer = (matIsPerPiece2 ? matCplb : matWeight * matCplb) * (1 + matMarkupPct/100);
+  const opRaw           = getOpTotal(q);
+  const opMarkupPct     = parseFloat(document.getElementById('op-markup-input').value)||0;
+  const opTotal         = opRaw * (1 + opMarkupPct/100);
+  const asmHrs          = parseFloat(document.getElementById('asm-hours').value)||0;
+  const asmCost         = asmHrs * rate;
+  const nreTotal2       = getNreTotal();
+  const nreSep2         = getNreSeparate();
+  const nrePc2          = (!nreSep2 && nreTotal2 > 0) ? nreTotal2 / Math.max(1, q) : 0;
+  const rawCost         = laborCost + overheadCost + matCostCustomer + opTotal + asmCost + nrePc2;
+  const riskMult        = getRiskMultiplier(q);
+  const adjCost         = rawCost * riskMult;
+  const margin          = Math.min(95, parseFloat(document.getElementById('margin-input').value)||40)/100;
+  return margin >= 1 ? adjCost : adjCost / (1 - margin);
+}
+
+function buildPriceBreaksTable() {
+  const tbody = document.getElementById('price-breaks-body');
+  if (!tbody) return;
+  tbody.innerHTML = priceBreakQtys.map((q, i) => {
+    const sp       = calcForQty(q);
+    const ext      = sp * q;
+    const isActive = q === currentQty;
+    return `<tr class="pb-row${isActive?' pb-active':''}">
+      <td style="padding:5px 10px">
+        <input type="number" class="pb-qty-input" value="${q}" min="1" step="1"
+          onchange="updatePriceBreakQty(${i},this.value)"
+          onclick="event.stopPropagation()">
+      </td>
+      <td onclick="setVol(${q})" style="cursor:pointer;text-align:right;padding:7px 18px">$${sp.toFixed(2)}</td>
+      <td onclick="setVol(${q})" style="cursor:pointer;text-align:right;padding:7px 18px">$${ext.toFixed(2)}</td>
+      <td style="padding:4px 6px;text-align:center">
+        <button class="pb-remove-btn" onclick="removePriceBreakRow(${i})" title="Remove">×</button>
+      </td>
+    </tr>`;
+  }).join('');
+  buildVolPresets();
+}
+
+function updatePriceBreakQty(index, val) {
+  const qty = parseInt(val);
+  if (!qty || qty < 1) return;
+  priceBreakQtys[index] = qty;
+  priceBreakQtys.sort((a, b) => a - b);
+  buildPriceBreaksTable();
+  scheduleAutoSave();
+}
+
+function removePriceBreakRow(index) {
+  priceBreakQtys.splice(index, 1);
+  buildPriceBreaksTable();
+  scheduleAutoSave();
+}
+
+function addPriceBreakRow() {
+  const input = document.getElementById('pb-add-input');
+  const qty   = parseInt(input.value);
+  if (!qty || qty < 1) return;
+  if (!priceBreakQtys.includes(qty)) {
+    priceBreakQtys.push(qty);
+    priceBreakQtys.sort((a, b) => a - b);
+  }
+  input.value = '';
+  buildPriceBreaksTable();
+  scheduleAutoSave();
+}
+
+let _asmOpen = false;
+function toggleAsm(forceOpen) {
+  _asmOpen = forceOpen !== undefined ? forceOpen : !_asmOpen;
+  document.getElementById('asm-section').style.display = _asmOpen ? '' : 'none';
+  document.getElementById('asm-toggle').textContent = _asmOpen ? '− Remove Assembly' : '+ Add Assembly';
+  if (!_asmOpen) {
+    document.getElementById('asm-hours').value = 0;
+    calcAll();
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   MATERIAL SELECT + STOCK TYPE / DIMENSION
+══════════════════════════════════════════════════ */
+function matSelectChanged() {
+  const key      = document.getElementById('mat-select').value;
+  const customNameEl = document.getElementById('mat-custom-name');
+  if (customNameEl) { customNameEl.style.display = key === 'custom' ? '' : 'none'; if (key !== 'custom') customNameEl.value = ''; }
+  const override = matOverrides[key] || {};
+
+  // Load price + supplier + lead
+  if (override.price) {
+    document.getElementById('mat-cplb').value = override.price.toFixed(2);
+    if (override.supplier) buildSupplierDropdown(override.supplier);
+    if (override.lead)     document.getElementById('mat-lead').value     = override.lead;
+  } else if (COMMODITY_REF[key]?.ref) {
+    document.getElementById('mat-cplb').value = COMMODITY_REF[key].ref.toFixed(2);
+  }
+
+  // Load stock type (triggers label + dimension updates)
+  document.getElementById('mat-stock-type').value = override.stockType || '';
+  _initStockTypeDropdown(); // populate options if empty
+  stockTypeChanged();       // updates labels, dimension list, bar length visibility
+
+  // Restore dimension value
+  const dimSel = document.getElementById('mat-dimension');
+  if (override.stockDimension) {
+    const opt = Array.from(dimSel.options).find(o => o.value === override.stockDimension);
+    if (opt) { dimSel.value = override.stockDimension; }
+    else      { dimSel.value = 'Custom'; document.getElementById('mat-custom-dim').style.display = ''; }
+  }
+  if (override.customDimension) {
+    document.getElementById('mat-custom-dim').value        = override.customDimension;
+    document.getElementById('mat-custom-dim').style.display = '';
+  }
+
+  // Restore bar length
+  if (override.barLength) {
+    const blSel = document.getElementById('mat-bar-length');
+    const blOpt = Array.from(blSel.options).find(o => o.value === override.barLength);
+    if (blOpt) { blSel.value = override.barLength; }
+    else        {
+      blSel.value = 'Custom';
+      document.getElementById('mat-custom-bar-length').style.display = '';
+      document.getElementById('mat-custom-bar-length').value = override.customBarLength || override.barLength;
+    }
+  }
+
+  // Show LAST PRICE
+  const lpEl = document.getElementById('mat-last-price');
+  if (lpEl && override.price) {
+    const u = stockUnit(override.stockType || '');
+    lpEl.textContent = 'LAST PRICE: $'+override.price.toFixed(2)+'/'+u
+      + (override.lastDate ? ' — '+override.lastDate : '');
+  } else if (lpEl) {
+    lpEl.textContent = '';
+  }
+
+  updateMatRef(key);
+  calcAll();
+}
+
+function _initStockTypeDropdown() {
+  const sel = document.getElementById('mat-stock-type');
+  if (sel.options.length > 1) return; // already populated
+  STOCK_TYPES.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    sel.appendChild(o);
+  });
+}
+
+function stockTypeChanged() {
+  const st   = document.getElementById('mat-stock-type').value;
+  const isBar = BAR_FORM_TYPES.has(st);
+  const isPiece = st === 'Per Piece';
+
+  // Update unit labels
+  const wl = document.getElementById('mat-weight-label');
+  const cl = document.getElementById('mat-cplb-label');
+  if (wl) wl.textContent = stockQtyLabel(st);
+  if (cl) cl.textContent = stockCostLabel(st);
+
+  // Hide dimension + bar length for Per Piece
+  const dimGroup = document.getElementById('mat-dimension-group');
+  if (dimGroup) dimGroup.style.display = isPiece ? 'none' : '';
+  if (isPiece) {
+    const blGroup = document.getElementById('mat-bar-length-group');
+    if (blGroup) blGroup.style.display = 'none';
+    return;
+  }
+
+  // Rebuild dimension dropdown
+  const dimSel = document.getElementById('mat-dimension');
+  const prev   = dimSel.value;
+  const dims   = STOCK_DIMENSIONS[st] || [];
+  dimSel.innerHTML = '<option value="">-- Select --</option>'
+    + dims.map(d => `<option${d===prev?' selected':''}>${esc(d)}</option>`).join('')
+    + '<option value="Custom"'+(prev==='Custom'?' selected':'')+'>Custom</option>';
+  // Show custom dim input if needed
+  document.getElementById('mat-custom-dim').style.display = dimSel.value === 'Custom' ? '' : 'none';
+
+  // Show/hide bar length row
+  const blGroup = document.getElementById('mat-bar-length-group');
+  if (blGroup) {
+    blGroup.style.display = isBar ? '' : 'none';
+    // Populate bar length if empty
+    const blSel = document.getElementById('mat-bar-length');
+    if (blSel && blSel.options.length <= 1) {
+      BAR_LENGTHS.forEach(l => {
+        const o = document.createElement('option'); o.value = l; o.textContent = l; blSel.appendChild(o);
+      });
+      const co = document.createElement('option'); co.value = 'Custom'; co.textContent = 'Custom'; blSel.appendChild(co);
+    }
+  }
+}
+
+function dimSelectChanged() {
+  const val = document.getElementById('mat-dimension').value;
+  document.getElementById('mat-custom-dim').style.display = val === 'Custom' ? '' : 'none';
+}
+
+function barLengthChanged() {
+  const val = document.getElementById('mat-bar-length').value;
+  document.getElementById('mat-custom-bar-length').style.display = val === 'Custom' ? '' : 'none';
+}
+
+function updateMatRef(key) {
+  const el = document.getElementById('mat-ref-display');
+  if (!el) return;
+  const ref = COMMODITY_REF[key];
+  const badge = spotBadgeHtml(key);
+  el.innerHTML = badge || '';
+}
+
+function spotBadgeHtml(key) {
+  const refPrice = COMMODITY_REF[key]?.ref;
+  if (!refPrice) return '';
+  // Find most recent price from job history
+  let lastPrice = null, lastDate = '';
+  jobs.forEach(job => {
+    if (job.mat?.key === key && job.mat?.cplb > 0) {
+      if (!lastDate || (job.date||'') > lastDate) {
+        lastDate = job.date || '';
+        lastPrice = job.mat.cplb;
+      }
+    }
+  });
+  if (!lastPrice) lastPrice = matOverrides[key]?.price;
+  if (!lastPrice) return ''; // no history — not enough data
+  const delta = (lastPrice - refPrice) / refPrice * 100;
+  if (Math.abs(delta) < 0.1) return '';
+  const up  = delta > 0;
+  const tip = `Commodity price has moved ${Math.abs(delta).toFixed(1)}% since your last purchase`;
+  return `<span class="spot-badge ${up?'up':'down'}" title="${tip}">${up?'▲':'▼'} ${Math.abs(delta).toFixed(1)}%</span>`;
+}
+
+/* ══════════════════════════════════════════════════
+   CUSTOMER HELPERS
+══════════════════════════════════════════════════ */
+function getCustomerDisplayName(job) {
+  if (job.customerId) {
+    const c = customers.find(c => c.id === job.customerId);
+    if (c) return c.name;
+    if (job.customerName) return job.customerName;
+  }
+  return job.customerName || job.customer || '';
+}
+
+function customerStats(id) {
+  const cjobs = getCustomerJobs(id);
+  const totalQuotes = cjobs.length;
+  const withStatus = cjobs.filter(j => j.status === 'WIN' || j.status === 'LOST');
+  const wins = cjobs.filter(j => j.status === 'WIN');
+  const winRate = withStatus.length > 0 ? Math.round(wins.length / withStatus.length * 100) : null;
+  const totalRevenue = wins.reduce((sum, j) => sum + ((j.sellPc||0) * (j.qty||1)), 0);
+  const avgJobSize = wins.length > 0 ? totalRevenue / wins.length : 0;
+  return {totalQuotes, winRate, totalRevenue, avgJobSize};
+}
+
+function getCustomerJobs(id) {
+  const cust = customers.find(c => c.id === id);
+  if (!cust) return [];
+  return jobs.filter(j => j.customerId === id || (!j.customerId && (j.customer||'').toLowerCase() === cust.name.toLowerCase()));
+}
+
+/* ══════════════════════════════════════════════════
+   CUSTOMER COMBO (in quote form)
+══════════════════════════════════════════════════ */
+function customerComboInput(val) {
+  const q = val.toLowerCase();
+  const filtered = customers.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    (c.contact||'').toLowerCase().includes(q)
+  ).slice(0, 8);
+
+  const dd = document.getElementById('cust-dropdown');
+  if (!val && filtered.length === 0) { dd.style.display='none'; return; }
+
+  let html = filtered.map(c => `
+    <div class="cust-dd-item" onmousedown="selectCustomer('${c.id}')">
+      <div>${esc(c.name)}</div>
+      <div class="cust-dd-contact">${esc(c.contact||'')}${c.phone ? ' · '+esc(c.phone) : ''}</div>
+    </div>
+  `).join('');
+  html += `<div class="cust-dd-add" onmousedown="openNewCustomerForm('${esc(val)}')">＋ Add "${esc(val)}" as new customer</div>`;
+
+  dd.innerHTML = html;
+  dd.style.display = 'block';
+}
+
+function customerComboBlur() {
+  setTimeout(() => {
+    document.getElementById('cust-dropdown').style.display = 'none';
+    // cust-new-form intentionally not closed here — user may have clicked into it.
+    // It closes via its own Save or Cancel buttons.
+  }, 220);
+}
+
+function selectCustomer(id) {
+  const c = customers.find(c => c.id === id);
+  if (!c) return;
+  currentCustomerId = id;
+  document.getElementById('customer-input').value = c.name;
+  document.getElementById('cust-dropdown').style.display = 'none';
+  updateCustomerSelectedInfo();
+  // Auto-populate carrier and payment terms from customer record
+  const shipCarrier = document.getElementById('shipping-carrier');
+  if (shipCarrier && c.carrier) shipCarrier.value = c.carrier;
+  const ptSel2 = document.getElementById('payment-terms-select');
+  const ptCust2 = document.getElementById('payment-terms-custom');
+  const knownTerms2 = ['COD','Net 10','Net 30','Net 60','Net 90'];
+  if (ptSel2 && c.paymentTerms && !ptSel2.value) {
+    if (knownTerms2.includes(c.paymentTerms)) { ptSel2.value = c.paymentTerms; }
+    else { ptSel2.value = 'Custom'; if (ptCust2) { ptCust2.value = c.paymentTerms; ptCust2.style.display = ''; } }
+  }
+  scheduleAutoSave();
+}
+
+function updateCustomerSelectedInfo() {
+  const el = document.getElementById('cust-selected-info');
+  if (!currentCustomerId) { el.innerHTML = ''; return; }
+  const c = customers.find(c => c.id === currentCustomerId);
+  if (!c) { el.innerHTML = ''; return; }
+  let info = '';
+  if (c.contact) info += esc(c.contact);
+  if (c.phone) info += (info ? ' · ' : '') + esc(c.phone);
+  el.innerHTML = info + ` <span class="cust-view-link" onclick="jumpToCustomer('${c.id}')">VIEW</span>`;
+}
+
+function openNewCustomerForm(val) {
+  const form = document.getElementById('cust-new-form');
+  document.getElementById('cust-dropdown').style.display = 'none';
+  document.getElementById('cnf-name').value = val || document.getElementById('customer-input').value;
+  document.getElementById('cnf-contact').value = '';
+  document.getElementById('cnf-phone').value = '';
+  document.getElementById('cnf-email').value = '';
+  form.style.display = 'block';
+  document.getElementById('cnf-name').focus();
+}
+
+function saveNewCustomer() {
+  const name = document.getElementById('cnf-name').value.trim();
+  if (!name) { document.getElementById('cnf-name').focus(); return; }
+  const newC = {
+    id: 'c' + Date.now(),
+    name,
+    contact: document.getElementById('cnf-contact').value.trim(),
+    phone:   document.getElementById('cnf-phone').value.trim(),
+    email:   document.getElementById('cnf-email').value.trim(),
+    notes:   '',
+    createdDate: todayStr(),
+  };
+  customers.push(newC);
+  saveCustomers();
+  document.getElementById('cust-new-form').style.display = 'none';
+  selectCustomer(newC.id);
+  buildCustomerList();
+}
+
+function cancelNewCustomer() {
+  document.getElementById('cust-new-form').style.display = 'none';
+}
+
+/* ══════════════════════════════════════════════════
+   CUSTOMER LIST + DETAIL
+══════════════════════════════════════════════════ */
+function buildCustomerList() {
+  const list = customers
+    .filter(c => !custSearch || c.name.toLowerCase().includes(custSearch) || (c.contact||'').toLowerCase().includes(custSearch))
+    .sort((a,b) => a.name.localeCompare(b.name));
+
+  document.getElementById('cust-list').innerHTML = list.map(c => {
+    const cjobs = getCustomerJobs(c.id);
+    const wins = cjobs.filter(j => j.status === 'WIN');
+    const rev = wins.reduce((s,j) => s + (j.sellPc||0)*(j.qty||1), 0);
+    return `
+      <div class="cust-list-item${selectedCustomerId===c.id?' selected':''}" onclick="showCustomerDetail('${c.id}')">
+        <div class="cust-list-name">${esc(c.name)}</div>
+        <div class="cust-list-contact">${esc(c.contact||'—')}</div>
+        <div class="cust-list-stats">${cjobs.length} quotes · ${wins.length} wins${rev > 0 ? ' · $'+rev.toLocaleString('en-US',{maximumFractionDigits:0}) : ''}</div>
+      </div>`;
+  }).join('') || '<div style="padding:20px 16px;font-size:13px;color:var(--dim)">No customers found</div>';
+}
+
+function showCustomerDetail(id) {
+  selectedCustomerId = id;
+  buildCustomerList(); // refresh selected state
+
+  const c = customers.find(c => c.id === id);
+  if (!c) return;
+
+  document.getElementById('cust-empty').style.display = 'none';
+  const detail = document.getElementById('cust-detail');
+  detail.style.display = 'block';
+
+  const stats = customerStats(id);
+  const cjobs = getCustomerJobs(id);
+
+  detail.innerHTML = `
+    <div class="cust-header">
+      <div class="cust-header-name">${esc(c.name)}</div>
+      <div class="cust-header-since">Customer since ${c.createdDate || '—'}</div>
+      <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">Delete</button>
+    </div>
+
+    <div class="cust-stats-grid">
+      <div class="cust-stat-card">
+        <div class="cust-stat-label">TOTAL QUOTES</div>
+        <div class="cust-stat-val">${stats.totalQuotes}</div>
+      </div>
+      <div class="cust-stat-card">
+        <div class="cust-stat-label">WIN RATE</div>
+        <div class="cust-stat-val">${stats.winRate !== null ? stats.winRate+'%' : '—'}</div>
+      </div>
+      <div class="cust-stat-card">
+        <div class="cust-stat-label">TOTAL REVENUE</div>
+        <div class="cust-stat-val" style="font-size:${stats.totalRevenue >= 100000 ? '22' : '34'}px">$${stats.totalRevenue.toLocaleString('en-US',{maximumFractionDigits:0})}</div>
+      </div>
+      <div class="cust-stat-card">
+        <div class="cust-stat-label">AVG JOB SIZE</div>
+        <div class="cust-stat-val" style="font-size:24px">$${stats.avgJobSize.toLocaleString('en-US',{maximumFractionDigits:0})}</div>
+      </div>
+    </div>
+
+    <div class="cust-fields">
+      <div class="cust-field-group">
+        <label>CONTACT</label>
+        <input type="text" value="${esc(c.contact||'')}" onchange="saveCustomerField('${c.id}','contact',this.value)" placeholder="Contact name">
+      </div>
+      <div class="cust-field-group">
+        <label>PHONE</label>
+        <input type="text" value="${esc(c.phone||'')}" onchange="saveCustomerField('${c.id}','phone',this.value)" placeholder="Phone number">
+      </div>
+      <div class="cust-field-group">
+        <label>EMAIL</label>
+        <input type="text" value="${esc(c.email||'')}" onchange="saveCustomerField('${c.id}','email',this.value)" placeholder="Email address">
+      </div>
+      <div class="cust-field-group">
+        <label>PREFERRED CARRIER</label>
+        <input type="text" value="${esc(c.carrier||'')}" onchange="saveCustomerField('${c.id}','carrier',this.value)" placeholder="e.g. FedEx, UPS, customer pickup">
+      </div>
+      <div class="cust-field-group">
+        <label>PAYMENT TERMS</label>
+        <input type="text" value="${esc(c.paymentTerms||'')}" onchange="saveCustomerField('${c.id}','paymentTerms',this.value)" placeholder="e.g. Net 30">
+      </div>
+      <div class="cust-field-group">
+        <label>NOTES</label>
+        <textarea onchange="saveCustomerField('${c.id}','notes',this.value)" style="height:70px;font-size:13px">${esc(c.notes||'')}</textarea>
+      </div>
+    </div>
+
+    <div class="section-header">Job History</div>
+    ${cjobs.length === 0
+      ? `<div style="font-size:14px;color:var(--dim);padding:16px 0">No jobs on record for this customer.</div>`
+      : `<table class="cust-jobs-table">
+          <thead><tr>
+            <th>PART NO. / DESC</th>
+            <th class="num">QTY</th>
+            <th class="num">PRICE/PC</th>
+            <th class="num">EXTENDED</th>
+            <th class="num">DATE</th>
+            <th>STATUS</th>
+          </tr></thead>
+          <tbody>
+            ${cjobs.map(j => `
+              <tr onclick="loadJob(${j.id})" title="Open quote">
+                <td><div class="td-pn">${esc(j.pn)}</div><div class="td-desc">${esc(j.desc||'')}</div></td>
+                <td class="num">${j.qty||1}</td>
+                <td class="num">$${(j.sellPc||0).toFixed(2)}</td>
+                <td class="num" style="color:var(--green)">$${((j.sellPc||0)*(j.qty||1)).toFixed(2)}</td>
+                <td class="num" style="color:var(--muted);font-size:13px">${j.date||''}</td>
+                <td><span class="badge badge-${(j.status||'pending').toLowerCase()}">${j.status||'PENDING'}</span></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`}
+  `;
+}
+
+function jumpToCustomer(id) {
+  showTab('customers');
+  showCustomerDetail(id);
+}
+
+function saveCustomerField(id, field, val) {
+  const c = customers.find(c => c.id === id);
+  if (!c) return;
+  c[field] = val;
+  saveCustomers();
+  buildCustomerList();
+  // Flash "✓ SAVED" so the estimator has confirmation the change persisted.
+  // KNOWN EDGE CASE: fields save on 'change' event (fires on blur). If the user edits a field
+  // and immediately closes the browser without triggering blur, data could be lost.
+  // This flash gives visual confirmation that a save occurred when it does fire.
+  // Revisit: consider an explicit Save button if this becomes a reported issue.
+  const flash = document.getElementById('cust-saved-flash');
+  if (flash) {
+    flash.style.display = 'block';
+    clearTimeout(flash._t);
+    flash._t = setTimeout(() => flash.style.display = 'none', 2000);
+  }
+}
+
+function deleteCustomer(id) {
+  if (!confirm('Delete this customer? Their job history will be preserved.')) return;
+  customers = customers.filter(c => c.id !== id);
+  saveCustomers();
+  selectedCustomerId = null;
+  document.getElementById('cust-empty').style.display = 'flex';
+  document.getElementById('cust-detail').style.display = 'none';
+  buildCustomerList();
+}
+
+function openNewCustomerTab() {
+  selectedCustomerId = null;
+  buildCustomerList();
+  document.getElementById('cust-empty').style.display = 'none';
+  const detail = document.getElementById('cust-detail');
+  detail.style.display = 'block';
+  detail.innerHTML = `
+    <div class="cust-new-tab-form">
+      <h3>NEW CUSTOMER</h3>
+      <div class="cust-fields">
+        <div class="cust-field-group" style="grid-column:1/-1">
+          <label>COMPANY NAME *</label>
+          <input type="text" id="ntf-name" placeholder="Company name" style="font-size:18px">
+        </div>
+        <div class="cust-field-group">
+          <label>CONTACT NAME</label>
+          <input type="text" id="ntf-contact" placeholder="Contact name">
+        </div>
+        <div class="cust-field-group">
+          <label>PHONE</label>
+          <input type="text" id="ntf-phone" placeholder="Phone number">
+        </div>
+        <div class="cust-field-group">
+          <label>EMAIL</label>
+          <input type="text" id="ntf-email" placeholder="Email address">
+        </div>
+        <div class="cust-field-group">
+          <label>NOTES</label>
+          <textarea id="ntf-notes" placeholder="Payment terms, certifications, special requirements..." style="height:80px;font-size:13px"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <button class="btn btn-amber" onclick="createNewCustomerFromTab()">Save Customer</button>
+        <button class="btn btn-ghost" onclick="showCustEmpty()">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('ntf-name').focus();
+}
+
+function createNewCustomerFromTab() {
+  const name = (document.getElementById('ntf-name').value||'').trim();
+  if (!name) { document.getElementById('ntf-name').focus(); return; }
+  const newC = {
+    id: 'c' + Date.now(),
+    name,
+    contact: (document.getElementById('ntf-contact').value||'').trim(),
+    phone:   (document.getElementById('ntf-phone').value||'').trim(),
+    email:   (document.getElementById('ntf-email').value||'').trim(),
+    notes:   (document.getElementById('ntf-notes').value||'').trim(),
+    createdDate: todayStr(),
+  };
+  customers.push(newC);
+  saveCustomers();
+  showCustomerDetail(newC.id);
+  buildCustomerList();
+}
+
+function showCustEmpty() {
+  selectedCustomerId = null;
+  buildCustomerList();
+  document.getElementById('cust-empty').style.display = 'flex';
+  document.getElementById('cust-detail').style.display = 'none';
+}
+
+/* ══════════════════════════════════════════════════
+   REPEAT PART RECALL
+══════════════════════════════════════════════════ */
+function checkRepeatPart(val) {
+  const pn = val.trim().toUpperCase();
+  if (!pn || pn.length < 2) { dismissRecall(); return; }
+  const matches = jobs.filter(j => j.pn && j.pn.toUpperCase() === pn && j.id !== currentJobId);
+  if (!matches.length) { dismissRecall(); return; }
+
+  const last = matches[0];
+  recallData = last;
+
+  const custDisplay = getCustomerDisplayName(last);
+  const matName = COMMODITY_REF[last.mat?.key]?.name || last.mat?.key || '—';
+  const cycleEst = last.times?.cycle?.est || 0;
+  const cycleAct = last.times?.cycle?.act;
+
+  document.getElementById('recallBanner').classList.add('show');
+  document.getElementById('recall-title').textContent =
+    `REPEAT PART — Last quoted ${last.date} · ${custDisplay}`;
+  document.getElementById('recall-grid').innerHTML = `
+    <span class="recall-field">Qty:</span>     <span class="recall-val">${last.qty} pcs</span>
+    <span class="recall-field">Price/Pc:</span><span class="recall-val">$${(last.sellPc||0).toFixed(2)}</span>
+    <span class="recall-field">Material:</span><span class="recall-val">${matName}</span>
+    <span class="recall-field">Cycle:</span>   <span class="recall-val">${cycleEst} min est${cycleAct != null ? ' / '+cycleAct+' act' : ''}</span>
+    <span class="recall-field">Margin:</span>  <span class="recall-val">${last.margin}%</span>
+  `;
+}
+
+function loadRecall() {
+  if (!recallData) return;
+  populateForm(recallData);
+  currentJobId = null;
+  dismissRecall();
+  const pnEl = document.getElementById('pn-input');
+  if (pnEl) pnEl.focus();
+}
+function dismissRecall() {
+  document.getElementById('recallBanner').classList.remove('show');
+}
+
+/* ══════════════════════════════════════════════════
+   FORM — COLLECT / POPULATE / CLEAR
+══════════════════════════════════════════════════ */
+function collectFormData() {
+  const times = {};
+  TIME_OPS.forEach(op => {
+    const estEl  = document.getElementById('ts-'+op.key);
+    const actEl  = document.getElementById('ts-'+op.key+'-act');
+    const descEl = document.getElementById('ts-'+op.key+'-desc');
+    const machEl = document.getElementById('ts-'+op.key+'-machine');
+    const actVal = actEl?.value;
+    times[op.key] = {
+      est:     parseFloat(estEl?.value)||0,
+      act:     (actVal !== '' && actVal != null) ? (parseFloat(actVal)||0) : null,
+      machine: machEl?.value || '',
+      ...(op.hasDesc ? {desc: descEl?.value || ''} : {}),
+    };
+  });
+
+  const outsideProcs = [];
+  document.querySelectorAll('#op-tbody tr').forEach(row => {
+    const sels   = row.querySelectorAll('select');
+    const inputs = row.querySelectorAll('input');
+    outsideProcs.push({
+      process: sels[0]?.value || '',
+      vendor:  sels[1]?.value || '',
+      cost:    parseFloat(inputs[0]?.value)||0,
+      lead:    inputs[1]?.value || '',
+      notes:   inputs[2]?.value || '',
+      basis:   row.dataset.basis || 'EA',
+    });
+  });
+
+  const sellPc   = parseFloat(document.getElementById('sum-sell').textContent.replace('$',''))||0;
+  const extended = sellPc * currentQty;
+
+  // Resolve customer name for display / legacy compat
+  let custName = document.getElementById('customer-input').value.trim();
+  if (currentCustomerId) {
+    const c = customers.find(c => c.id === currentCustomerId);
+    if (c) custName = c.name;
+  }
+
+  return {
+    pn:           document.getElementById('pn-input').value.trim(),
+    desc:         document.getElementById('desc-input').value.trim(),
+    jobNumber:    document.getElementById('job-number-input').value.trim(),
+    rev:          document.getElementById('rev-input').value.trim() || 'A',
+    drawingLink:   document.getElementById('drawing-link-input').value.trim(),
+    paymentTerms:  (() => { const v = document.getElementById('payment-terms-select').value; return v === 'Custom' ? (document.getElementById('payment-terms-custom').value.trim()||'Custom') : v; })(),
+    customer:     custName,
+    customerId:   currentCustomerId || null,
+    customerName: custName,
+    qty:          currentQty,
+    margin:       parseFloat(document.getElementById('margin-input').value)||40,
+    notes:        document.getElementById('est-notes').value,
+    status:       document.getElementById('save-status-select').value,
+    nre: {
+      engineering: _nreOpen ? (parseFloat(document.getElementById('nre-engineering').value)||0) : 0,
+      tooling:     _nreOpen ? (parseFloat(document.getElementById('nre-tooling').value)||0)     : 0,
+      fixtures:    _nreOpen ? (parseFloat(document.getElementById('nre-fixtures').value)||0)    : 0,
+      other:       _nreOpen ? (parseFloat(document.getElementById('nre-other').value)||0)       : 0,
+      separate:    getNreSeparate(),
+      total:       getNreTotal(),
+    },
+    times,
+    mat: {
+      key:       document.getElementById('mat-select').value,
+      customName: document.getElementById('mat-custom-name').value || '',
+      weight:   parseFloat(document.getElementById('mat-weight').value)||0,
+      cplb:     parseFloat(document.getElementById('mat-cplb').value)||0,
+      markup:   parseFloat(document.getElementById('mat-markup').value)||0,
+      supplier: document.getElementById('mat-supplier').value,
+      lead:     document.getElementById('mat-lead').value,
+      stockType:       document.getElementById('mat-stock-type').value || '',
+      stockDimension:  (() => { const v = document.getElementById('mat-dimension').value; return v === 'Custom' ? '' : v; })(),
+      customDimension: document.getElementById('mat-custom-dim').value || '',
+      barLength:       (() => { const v = document.getElementById('mat-bar-length').value; return v === 'Custom' ? '' : v; })(),
+      customBarLength: document.getElementById('mat-custom-bar-length').value || '',
+      unit: stockUnit(document.getElementById('mat-stock-type').value),
+    },
+    outsideProcs,
+    priceBreakQtys:  priceBreakQtys.slice(),
+    packHandleLot,
+    inspectLot,
+    shippingCarrier: document.getElementById('shipping-carrier')?.value || '',
+    shippingCost:    parseFloat(document.getElementById('shipping-cost')?.value)||0,
+    flags:    [...activeFlags],
+    opMarkup: parseFloat(document.getElementById('op-markup-input').value)||0,
+    overhead: parseFloat(document.getElementById('overhead-input').value)||0,
+    asmHours: parseFloat(document.getElementById('asm-hours').value)||0,
+    sellPc, extended,
+  };
+}
+
+function populateForm(job) {
+  if (!job) return;
+
+  document.getElementById('pn-input').value            = job.pn || '';
+  document.getElementById('desc-input').value          = job.desc || '';
+  document.getElementById('job-number-input').value    = job.jobNumber || '';
+  document.getElementById('rev-input').value           = job.rev || 'A';
+  document.getElementById('drawing-link-input').value  = job.drawingLink || '';
+  const ptSel = document.getElementById('payment-terms-select');
+  const ptCust = document.getElementById('payment-terms-custom');
+  const knownTerms = ['COD','Net 10','Net 30','Net 60','Net 90'];
+  if (ptSel) {
+    const pt = job.paymentTerms || '';
+    if (knownTerms.includes(pt)) { ptSel.value = pt; if (ptCust) { ptCust.style.display='none'; ptCust.value=''; } }
+    else if (pt) { ptSel.value='Custom'; if (ptCust) { ptCust.value=pt; ptCust.style.display=''; } }
+    else { ptSel.value=''; if (ptCust) { ptCust.style.display='none'; ptCust.value=''; } }
+  }
+  document.getElementById('margin-input').value        = job.margin ?? settings.defaultMargin;
+  document.getElementById('est-notes').value           = job.notes || '';
+  document.getElementById('save-status-select').value  = job.status || 'PENDING';
+
+  // NRE
+  const nre = job.nre || {};
+  const setNre = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  setNre('nre-engineering', nre.engineering || '');
+  setNre('nre-tooling',     nre.tooling     || '');
+  setNre('nre-fixtures',    nre.fixtures    || '');
+  setNre('nre-other',       nre.other       || '');
+  const nreSepChk = document.getElementById('nre-separate');
+  if (nreSepChk) nreSepChk.checked = nre.separate || false;
+  toggleNre(!!(nre.engineering || nre.tooling || nre.fixtures || nre.other));
+
+  // Customer combo
+  currentCustomerId = job.customerId || null;
+  const custDisplay = getCustomerDisplayName(job);
+  document.getElementById('customer-input').value = custDisplay;
+  updateCustomerSelectedInfo();
+
+  // Time stack
+  packHandleLot = job.packHandleLot || false;
+  inspectLot    = job.inspectLot    || false;
+  TIME_OPS.forEach(op => {
+    let t = job.times?.[op.key] || {};
+    // Legacy migration: merge old pack + handle into packhandle
+    if (op.key === 'packhandle' && !job.times?.packhandle) {
+      const oldPack   = job.times?.pack   || {};
+      const oldHandle = job.times?.handle || {};
+      t = {est: (oldPack.est||0) + (oldHandle.est||0), act: null};
+    }
+    const estEl  = document.getElementById('ts-'+op.key);
+    const actEl  = document.getElementById('ts-'+op.key+'-act');
+    const descEl = document.getElementById('ts-'+op.key+'-desc');
+    const machEl = document.getElementById('ts-'+op.key+'-machine');
+    if (estEl)  estEl.value  = t.est ?? 0;
+    if (actEl)  actEl.value  = (t.act != null) ? t.act : '';
+    if (descEl) descEl.value = t.desc || '';
+    if (machEl && t.machine) machEl.value = t.machine;
+  });
+  const scEl = document.getElementById('shipping-carrier'); if (scEl) scEl.value = job.shippingCarrier || '';
+  const scoEl = document.getElementById('shipping-cost'); if (scoEl) scoEl.value = job.shippingCost || 0;
+  // Sync basis buttons
+  ['packhandle','inspect'].forEach(key => {
+    const on  = getBasisState(key);
+    const btn = document.getElementById('ts-'+key+'-basis');
+    const unit = document.getElementById('ts-'+key+'-unit');
+    if (btn)  { btn.textContent = on ? 'LOT' : 'EA'; btn.style.color = on ? 'var(--amber)' : 'var(--muted)'; }
+    if (unit) unit.textContent = on ? 'per job' : 'per piece';
+  });
+
+  // Material
+  const mat = job.mat || {};
+  document.getElementById('mat-select').value   = mat.key || '';
+  const cnEl = document.getElementById('mat-custom-name');
+  if (cnEl) { cnEl.value = mat.customName || ''; cnEl.style.display = mat.key === 'custom' ? '' : 'none'; }
+  document.getElementById('mat-weight').value   = mat.weight || '';
+  document.getElementById('mat-cplb').value     = mat.cplb || '';
+  document.getElementById('mat-markup').value   = mat.markup ?? settings.defaultMatMarkup ?? 20;
+  buildSupplierDropdown(mat.supplier || '');
+  document.getElementById('mat-lead').value     = mat.lead || '';
+
+  // Stock type, dimension, bar length
+  _initStockTypeDropdown();
+  document.getElementById('mat-stock-type').value = mat.stockType || '';
+  stockTypeChanged();
+  const dimSel = document.getElementById('mat-dimension');
+  const dimVal = mat.stockDimension || (mat.customDimension ? 'Custom' : '');
+  if (dimVal && Array.from(dimSel.options).some(o => o.value === dimVal)) dimSel.value = dimVal;
+  else if (mat.stockDimension) dimSel.value = 'Custom';
+  if (mat.customDimension) {
+    document.getElementById('mat-custom-dim').value = mat.customDimension;
+    document.getElementById('mat-custom-dim').style.display = '';
+  }
+  const blSel = document.getElementById('mat-bar-length');
+  if (mat.barLength && Array.from(blSel.options).some(o => o.value === mat.barLength)) {
+    blSel.value = mat.barLength;
+  } else if (mat.customBarLength) {
+    blSel.value = 'Custom';
+    document.getElementById('mat-custom-bar-length').value = mat.customBarLength;
+    document.getElementById('mat-custom-bar-length').style.display = '';
+  }
+  // LAST PRICE
+  const lpEl = document.getElementById('mat-last-price');
+  const ov   = matOverrides[mat.key] || {};
+  if (lpEl && ov.price) {
+    const u = stockUnit(mat.stockType || ov.stockType || '');
+    lpEl.textContent = 'LAST PRICE: $'+ov.price.toFixed(2)+'/'+u+(ov.lastDate?' — '+ov.lastDate:'');
+  } else if (lpEl) { lpEl.textContent = ''; }
+
+  updateMatRef(mat.key);
+
+  // Per-job overrides
+  document.getElementById('op-markup-input').value = job.opMarkup ?? settings.defaultOpMarkup ?? 0;
+  document.getElementById('overhead-input').value  = job.overhead  ?? settings.defaultOverhead ?? 0;
+
+  // Assembly
+  const asmHrs = job.asmHours || 0;
+  document.getElementById('asm-hours').value = asmHrs;
+  toggleAsm(asmHrs > 0);
+
+  // Price break quantities
+  priceBreakQtys = (job.priceBreakQtys && job.priceBreakQtys.length)
+    ? job.priceBreakQtys.slice()
+    : DEFAULT_PRICE_BREAK_QTYS.slice();
+
+  // Outside processes
+  document.getElementById('op-tbody').innerHTML = '';
+  (job.outsideProcs || []).forEach(op => addOpRow(op.process, op.vendor, op.cost, op.lead, op.notes, op.basis || 'EA'));
+
+  // Risk flags
+  activeFlags.clear();
+  document.querySelectorAll('.risk-flag').forEach(el => {
+    el.classList.remove('active');
+    el.querySelector('.risk-flag-check').textContent = '';
+  });
+  (job.flags || []).forEach(key => {
+    activeFlags.add(key);
+    const el = document.getElementById('flag-'+key);
+    if (el) {
+      el.classList.add('active');
+      el.querySelector('.risk-flag-check').textContent = '✓';
+    }
+  });
+
+  // Qty
+  const qty = job.qty || 1;
+  currentQty = qty;
+  document.getElementById('qty-input').value = qty;
+  document.querySelectorAll('.vol-preset').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent) === qty);
+  });
+
+  // Sidebar highlight
+  document.querySelectorAll('.job-item').forEach(el => el.classList.remove('selected'));
+  if (job.id) {
+    const sel = document.querySelector(`.job-item[data-id="${job.id}"]`);
+    if (sel) sel.classList.add('selected');
+  }
+
+  dismissRecall();
+  calcAll();
+}
+
+function newQuote() {
+  currentJobId = null;
+  currentCustomerId = null;
+  dismissPnWarn();
+  document.getElementById('pn-input').value            = '';
+  document.getElementById('desc-input').value          = '';
+  document.getElementById('job-number-input').value    = nextJobNumber();
+  document.getElementById('rev-input').value           = 'A';
+  document.getElementById('drawing-link-input').value  = '';
+  document.getElementById('payment-terms-select').value = '';
+  const ptcEl = document.getElementById('payment-terms-custom'); if (ptcEl) { ptcEl.value=''; ptcEl.style.display='none'; }
+  document.getElementById('customer-input').value      = '';
+  document.getElementById('cust-selected-info').innerHTML = '';
+  document.getElementById('margin-input').value        = settings.defaultMargin;
+  document.getElementById('est-notes').value           = '';
+  document.getElementById('save-status-select').value  = 'PENDING';
+  // Clear NRE
+  ['nre-engineering','nre-tooling','nre-fixtures','nre-other'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const nreSepChk = document.getElementById('nre-separate');
+  if (nreSepChk) nreSepChk.checked = false;
+  toggleNre(false);
+  document.getElementById('btn-requote').style.display = 'none';
+  document.getElementById('mat-select').value    = '';
+  const cnEl2 = document.getElementById('mat-custom-name'); if (cnEl2) { cnEl2.value = ''; cnEl2.style.display = 'none'; }
+  const scClear = document.getElementById('shipping-carrier'); if (scClear) scClear.value = '';
+  const scoClear = document.getElementById('shipping-cost'); if (scoClear) scoClear.value = 0;
+  document.getElementById('mat-weight').value    = '';
+  document.getElementById('mat-cplb').value      = '';
+  document.getElementById('mat-markup').value    = settings.defaultMatMarkup ?? 20;
+  buildSupplierDropdown('');
+  document.getElementById('mat-lead').value      = '';
+  document.getElementById('op-markup-input').value = settings.defaultOpMarkup ?? 0;
+  document.getElementById('overhead-input').value  = settings.defaultOverhead ?? 0;
+  document.getElementById('asm-hours').value = 0;
+  toggleAsm(false);
+  // Clear stock fields
+  _initStockTypeDropdown();
+  document.getElementById('mat-stock-type').value = '';
+  document.getElementById('mat-dimension').innerHTML = '<option value="">-- Select --</option>';
+  document.getElementById('mat-custom-dim').value = '';
+  document.getElementById('mat-custom-dim').style.display = 'none';
+  document.getElementById('mat-bar-length-group').style.display = 'none';
+  document.getElementById('mat-bar-length').value = '';
+  document.getElementById('mat-custom-bar-length').value = '';
+  document.getElementById('mat-custom-bar-length').style.display = 'none';
+  const wl = document.getElementById('mat-weight-label');
+  const cl = document.getElementById('mat-cplb-label');
+  if (wl) wl.textContent = 'WEIGHT (lbs)';
+  if (cl) cl.textContent = 'COST/LB ($)';
+  const lpEl = document.getElementById('mat-last-price');
+  if (lpEl) lpEl.textContent = '';
+  document.getElementById('mat-ref-display').innerHTML = '';
+  document.getElementById('mat-ref-display').textContent = '';
+  document.getElementById('op-tbody').innerHTML = '';
+  priceBreakQtys = DEFAULT_PRICE_BREAK_QTYS.slice();
+  packHandleLot = false;
+  inspectLot    = false;
+  TIME_OPS.forEach(op => {
+    const el     = document.getElementById('ts-'+op.key);
+    const actEl  = document.getElementById('ts-'+op.key+'-act');
+    const descEl = document.getElementById('ts-'+op.key+'-desc');
+    if (el)     el.value     = 0;
+    if (actEl)  actEl.value  = '';
+    if (descEl) descEl.value = '';
+  });
+  ['packhandle','inspect'].forEach(key => {
+    const btn  = document.getElementById('ts-'+key+'-basis');
+    const unit = document.getElementById('ts-'+key+'-unit');
+    if (btn)  { btn.textContent = 'EA'; btn.style.color = 'var(--muted)'; }
+    if (unit) unit.textContent = 'per piece';
+  });
+  activeFlags.clear();
+  document.querySelectorAll('.risk-flag').forEach(el => {
+    el.classList.remove('active');
+    el.querySelector('.risk-flag-check').textContent = '';
+  });
+  setVol(1);
+  dismissRecall();
+  document.querySelectorAll('.job-item').forEach(el => el.classList.remove('selected'));
+  localStorage.removeItem('cs_draft');
+  calcAll();
+  document.getElementById('pn-input').focus();
+}
+
+/* ══════════════════════════════════════════════════
+   SAVE QUOTE
+══════════════════════════════════════════════════ */
+function saveQuote() {
+  dismissPnWarn();
+  const data = collectFormData();
+  const pn   = data.pn || ('Draft-'+Date.now());
+  const isUpdate = currentJobId != null;
+
+  // Duplicate PN check: only on new quotes, not updates.
+  // Does not block — user can confirm and continue as a new revision.
+  if (!isUpdate && pn && !pn.startsWith('Draft-')) {
+    const dupExists = jobs.some(j => j.pn && j.pn.toUpperCase() === pn.toUpperCase());
+    if (dupExists) {
+      document.getElementById('pn-warn').classList.add('show');
+      return; // wait for user to confirm or cancel
+    }
+  }
+  checkIncomplete(doSave);
+}
+
+function confirmSaveQuote() {
+  // User acknowledged the duplicate PN warning — proceed with save (still check incomplete).
+  dismissPnWarn();
+  checkIncomplete(doSave);
+}
+
+function dismissPnWarn() {
+  document.getElementById('pn-warn').classList.remove('show');
+}
+
+function doSave() {
+  const data = collectFormData();
+  const pn   = data.pn || ('Draft-'+Date.now());
+  const now  = todayStr();
+  const isUpdate = currentJobId != null;
+  const existingJob = isUpdate ? jobs.find(j => j.id === currentJobId) : null;
+
+  const job = {
+    ...data,
+    pn,
+    id:   isUpdate ? currentJobId : Date.now(),
+    date: existingJob?.date || now,
+  };
+
+  if (data.mat.key && data.mat.cplb > 0) {
+    const prev = matOverrides[data.mat.key] || {};
+    matOverrides[data.mat.key] = {
+      price:           data.mat.cplb,
+      lastUsed:        data.mat.cplb,
+      lastDate:        now,
+      supplier:        data.mat.supplier        || prev.supplier        || '',
+      lead:            data.mat.lead            || prev.lead            || '',
+      stockType:       data.mat.stockType       || prev.stockType       || '',
+      stockDimension:  data.mat.stockDimension  || prev.stockDimension  || '',
+      customDimension: data.mat.customDimension || prev.customDimension || '',
+      barLength:       data.mat.barLength       || prev.barLength       || '',
+      customBarLength: data.mat.customBarLength || prev.customBarLength || '',
+    };
+    saveMatOverrides();
+  }
+
+  if (isUpdate) {
+    const idx = jobs.findIndex(j => j.id === currentJobId);
+    if (idx >= 0) jobs[idx] = job; else jobs.unshift(job);
+  } else {
+    currentJobId = job.id;
+    jobs.unshift(job);
+  }
+
+  saveJobsToStorage();
+  buildSidebar();
+  buildHistory();
+
+  const el = document.getElementById('save-confirm');
+  el.textContent = '✓ Saved at '+new Date().toLocaleTimeString();
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.textContent='', 4000);
+
+  localStorage.removeItem('cs_draft');
+}
+
+/* ══════════════════════════════════════════════════
+   CUSTOMER QUOTE PRINT
+══════════════════════════════════════════════════ */
+function printCustomerQuote() {
+  checkIncomplete(_executePrint);
+}
+function _executePrint() {
+  const data        = collectFormData();
+  const qty         = data.qty || 1;
+  const matMarkup   = parseFloat(document.getElementById('mat-markup').value)||0;
+  const matStockType    = document.getElementById('mat-stock-type').value;
+  const matCostInternal = matStockType === 'Per Piece' ? (data.mat.cplb||0) : (data.mat.weight||0) * (data.mat.cplb||0);
+  const matCostCustomer = matCostInternal * (1 + matMarkup / 100);
+  const includeNotes = document.getElementById('quote-include-notes').checked;
+
+  const rate = settings.rate || 125;
+  let laborCost = 0, laborMins = 0;
+  TIME_OPS.forEach(op => {
+    const t    = data.times?.[op.key] || {};
+    const mins = t.est || 0;
+    const isPerJob = op.hasBasis ? (op.key === 'inspect' ? (data.inspectLot||false) : (data.packHandleLot||false)) : op.perJob;
+    laborCost += isPerJob ? (mins/60)*rate / Math.max(1,qty) : (mins/60)*rate;
+    laborMins += isPerJob ? mins / Math.max(1,qty) : mins;
+  });
+  const overheadRate   = data.overhead || 0;
+  const overheadCost   = (laborMins/60) * overheadRate;
+  const totalLaborCost = laborCost + overheadCost;
+  const opMarkupPct    = data.opMarkup || 0;
+  const opRaw          = (data.outsideProcs||[]).reduce((s,op) => s + (op.cost||0), 0);
+  const opTotal        = opRaw * (1 + opMarkupPct/100);
+  const asmCost        = (data.asmHours || 0) * rate;
+
+  // NRE
+  const nre        = data.nre || {};
+  const nreTotal   = nre.total || 0;
+  const nreSep     = nre.separate || false;
+  const nrePc      = (!nreSep && nreTotal > 0) ? nreTotal / Math.max(1, qty) : 0;
+
+  const riskMult = getRiskMultiplier(qty);
+  const rawCost  = totalLaborCost + matCostCustomer + opTotal + asmCost + nrePc;
+  const adjCost  = rawCost * riskMult;
+  const margin   = Math.min(95, data.margin||40) / 100;
+  const sellPc   = margin >= 1 ? adjCost : adjCost / (1 - margin);
+  const extended = sellPc * qty;
+
+  const shopName    = settings.shopName || 'Your Shop';
+  const shopPhone   = settings.phone || '';
+  const shopEmail   = settings.email || '';
+  const matName     = COMMODITY_REF[data.mat?.key]?.name || data.mat?.key || '';
+  const custName    = data.customerName || data.customer || '';
+  const quoteDate   = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+  const jobNum      = data.jobNumber || data.pn || ('Q-'+Date.now());
+  const partPN      = data.pn || '';
+  const partDesc    = data.desc || '';
+  const revStr      = data.rev && data.rev !== 'A' ? ' REV ' + data.rev : (data.rev === 'A' ? ' REV A' : '');
+  const drawingLink = data.drawingLink || '';
+
+  // Main line: part number + description as the line item label
+  const lineDesc = [partPN, partDesc].filter(Boolean).join(' — ') || 'Machining Services';
+
+  // NRE line (only when separate)
+  const nreRow = (nreSep && nreTotal > 0)
+    ? `<tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb">Non-Recurring Engineering (NRE)</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:center">1</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">$${nreTotal.toFixed(2)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">$${nreTotal.toFixed(2)}</td>
+       </tr>` : '';
+
+  // Scope section: material + outside processes (names only, no cost)
+  const matScopeStr = matName
+    ? [matName, data.mat?.stockType, data.mat?.stockDimension || data.mat?.customDimension, data.mat?.barLength || data.mat?.customBarLength].filter(Boolean).join(', ')
+    : '';
+  const opScopeItems = (data.outsideProcs||[]).filter(op => op.process).map(op =>
+    op.vendor ? `${esc(op.process)} (${esc(op.vendor)})` : esc(op.process)
+  );
+
+  const scopeRows = [
+    matScopeStr ? `<tr><td style="padding:7px 12px;border-bottom:1px solid #f3f4f6;font-size:12px;color:#6b7280;width:120px">Material</td><td style="padding:7px 12px;border-bottom:1px solid #f3f4f6;font-size:13px">${esc(matScopeStr)}</td></tr>` : '',
+    ...opScopeItems.map(op => `<tr><td style="padding:7px 12px;border-bottom:1px solid #f3f4f6;font-size:12px;color:#6b7280;width:120px">Outside Process</td><td style="padding:7px 12px;border-bottom:1px solid #f3f4f6;font-size:13px">${op}</td></tr>`),
+    drawingLink ? `<tr><td style="padding:7px 12px;font-size:12px;color:#6b7280;width:120px">Drawing / Model</td><td style="padding:7px 12px;font-size:13px"><a href="${esc(drawingLink)}" style="color:#2563eb">${esc(drawingLink)}</a></td></tr>` : '',
+  ].filter(Boolean).join('');
+
+  const scopeSection = scopeRows
+    ? `<div style="margin-top:24px;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden">
+        <div style="background:#f9fafb;padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:1px;color:#6b7280">SCOPE OF WORK</div>
+        <table style="width:100%"><tbody>${scopeRows}</tbody></table>
+       </div>` : '';
+
+  const notesHtml = (includeNotes && data.notes)
+    ? `<div style="margin-top:24px;padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#6b7280;margin-bottom:8px">NOTES</div>
+        <div style="font-size:13px;color:#374151;white-space:pre-wrap">${esc(data.notes)}</div>
+       </div>` : '';
+
+  const footerContact = [shopPhone, shopEmail].filter(Boolean).join(' · ');
+  const totalWithNre  = nreSep ? extended + nreTotal : extended;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Quote — ${esc(jobNum)}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size: 14px; color: #111; background: #fff; padding: 48px; max-width: 820px; margin: 0 auto; }
+  h1 { font-family: Georgia, serif; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: #111; }
+  table { width: 100%; border-collapse: collapse; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:24px;border-bottom:2px solid #111">
+  <div>
+    <h1>${esc(shopName)}</h1>
+    ${footerContact ? `<div style="margin-top:6px;font-size:13px;color:#6b7280">${esc(footerContact)}</div>` : ''}
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:22px;font-weight:700;letter-spacing:1px;color:#111">QUOTATION</div>
+    <div style="font-size:13px;color:#6b7280;margin-top:4px">${quoteDate}</div>
+    <div style="font-size:13px;color:#6b7280;margin-top:2px">Job #${esc(jobNum)}${revStr ? ' · '+esc(revStr) : ''}</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:32px">
+  <div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#6b7280;margin-bottom:6px">QUOTE TO</div>
+    <div style="font-size:15px;font-weight:600">${custName ? esc(custName) : '—'}</div>
+  </div>
+  <div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#6b7280;margin-bottom:6px">PART NUMBER</div>
+    <div style="font-size:15px;font-weight:600;font-family:monospace;letter-spacing:1px">${esc(partPN) || '—'}</div>
+  </div>
+  ${partDesc ? `<div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:#6b7280;margin-bottom:6px">DESCRIPTION</div>
+    <div style="font-size:14px">${esc(partDesc)}</div>
+  </div>` : '<div></div>'}
+</div>
+
+<table style="margin-bottom:0">
+  <thead>
+    <tr style="background:#111;color:#fff">
+      <th style="padding:10px 12px;text-align:left;font-size:11px;letter-spacing:1px;font-weight:700">DESCRIPTION</th>
+      <th style="padding:10px 12px;text-align:center;font-size:11px;letter-spacing:1px;font-weight:700">QTY</th>
+      <th style="padding:10px 12px;text-align:right;font-size:11px;letter-spacing:1px;font-weight:700">UNIT PRICE</th>
+      <th style="padding:10px 12px;text-align:right;font-size:11px;letter-spacing:1px;font-weight:700">EXTENDED</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb">${esc(lineDesc)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${qty}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">$${sellPc.toFixed(2)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right">$${extended.toFixed(2)}</td>
+    </tr>
+    ${nreRow}
+  </tbody>
+</table>
+
+<div style="display:flex;justify-content:flex-end;margin-top:0">
+  <div style="width:280px">
+    ${nreSep && nreTotal > 0 ? `<div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#6b7280"><span>Parts Subtotal</span><span>$${extended.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#6b7280"><span>NRE (one-time)</span><span>$${nreTotal.toFixed(2)}</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;padding:14px 12px;background:#111;color:#fff;font-size:16px;font-weight:700;margin-top:1px">
+      <span>TOTAL (${qty} pc)</span><span>$${totalWithNre.toFixed(2)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f3f4f6;font-size:13px;font-weight:600">
+      <span>Price per piece</span><span>$${sellPc.toFixed(2)}</span>
+    </div>
+  </div>
+</div>
+
+${scopeSection}
+${notesHtml}
+
+<div style="margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;color:#9ca3af;display:flex;justify-content:space-between;align-items:center">
+  <span>Quote valid for 30 days · Job #${esc(jobNum)}${revStr}</span>
+  <span>${esc(shopName)}${footerContact ? ' · '+esc(footerContact) : ''}</span>
+</div>
+
+<script>window.onload=function(){window.print();}<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════════ */
+function renderJobItem(job, q) {
+  const cn = getCustomerDisplayName(job);
+  const revBit = job.rev && job.rev !== 'A' ? `<span style="font-size:11px;color:var(--steel);margin-left:6px;font-weight:400">REV ${esc(job.rev)}</span>` : '';
+  const jobNumBit = job.jobNumber ? `<span style="font-size:11px;color:var(--dim);margin-left:4px">#${esc(job.jobNumber)}</span>` : '';
+  return `
+    <div class="job-item${job.id===currentJobId?' selected':''}" data-id="${job.id}" onclick="loadJob(${job.id})">
+      <div class="job-item-pn">${q ? hlMatch(job.pn||'',q) : esc(job.pn||'')}${revBit}</div>
+      <div class="job-item-desc">${q ? hlMatch(job.desc||'—',q) : esc(job.desc||'—')}${jobNumBit}</div>
+      <div class="job-item-meta">
+        <span>${q ? hlMatch(cn,q) : esc(cn)}</span>
+        <span class="badge badge-${(job.status||'pending').toLowerCase()}">${job.status||'PENDING'}</span>
+      </div>
+    </div>`;
+}
+
+function buildSidebar() {
+  const q = sidebarSearch.trim().toLowerCase();
+  const list = document.getElementById('sidebarList');
+
+  if (!q) {
+    list.innerHTML = jobs.slice(0,40).map(j => renderJobItem(j,'')).join('');
+    return;
+  }
+
+  const matName = j => COMMODITY_REF[j.mat?.key]?.name || j.mat?.key || '';
+  const matched = jobs.filter(j =>
+    (j.pn||'').toLowerCase().includes(q) ||
+    (j.desc||'').toLowerCase().includes(q) ||
+    getCustomerDisplayName(j).toLowerCase().includes(q) ||
+    matName(j).toLowerCase().includes(q)
+  );
+
+  if (!matched.length) {
+    list.innerHTML = '<div style="padding:20px 16px;font-size:13px;color:var(--dim)">No results</div>';
+    return;
+  }
+
+  // If any customers match by name, group those jobs first
+  const custMatches = customers.filter(c => c.name.toLowerCase().includes(q));
+  let html = '';
+  if (custMatches.length) {
+    const custIds = new Set(custMatches.map(c => c.id));
+    const byCust  = matched.filter(j => j.customerId && custIds.has(j.customerId));
+    const other   = matched.filter(j => !(j.customerId && custIds.has(j.customerId)));
+    if (byCust.length) {
+      html += `<div class="sidebar-group-hdr">CUSTOMER</div>`;
+      html += byCust.map(j => renderJobItem(j,q)).join('');
+    }
+    if (other.length) {
+      if (byCust.length) html += `<div class="sidebar-group-hdr">OTHER MATCHES</div>`;
+      html += other.map(j => renderJobItem(j,q)).join('');
+    }
+  } else {
+    html = matched.map(j => renderJobItem(j,q)).join('');
+  }
+  list.innerHTML = html;
+}
+
+function sidebarSearchInput(val) {
+  sidebarSearch = val;
+  buildSidebar();
+}
+
+function clearSidebarSearch() {
+  sidebarSearch = '';
+  const inp = document.getElementById('sidebar-search-input');
+  if (inp) inp.value = '';
+  buildSidebar();
+}
+
+function loadJob(id) {
+  // WATCH: id type handling. Seed job IDs are numeric literals (1000001); new jobs use Date.now()
+  // (also numeric). Inline onclick passes these as number literals, so the === comparison is safe.
+  // If IDs ever come from data-attributes (strings) the strict === would fail. Do not refactor yet —
+  // monitor if loadJob() stops matching after any structural change to how IDs are threaded.
+  const job = jobs.find(j => j.id === id);
+  if (!job) return;
+  currentJobId = job.id;
+  populateForm(job);
+  document.getElementById('btn-requote').style.display = '';
+  showTab('quote');
+}
+
+/* ══════════════════════════════════════════════════
+   JOB HISTORY
+══════════════════════════════════════════════════ */
+function buildHistory() {
+  const filtered = jobs.filter(r => {
+    const matchFilter = histFilter === 'all' || (r.status||'PENDING') === histFilter;
+    const q = histSearch;
+    const custDisplay = getCustomerDisplayName(r).toLowerCase();
+    const matchSearch = !q
+      || (r.pn||'').toLowerCase().includes(q)
+      || (r.desc||'').toLowerCase().includes(q)
+      || custDisplay.includes(q);
+    return matchFilter && matchSearch;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    let va, vb;
+    switch (histSortCol) {
+      case 'pn':       va = (a.pn||'').toLowerCase();               vb = (b.pn||'').toLowerCase(); break;
+      case 'customer': va = getCustomerDisplayName(a).toLowerCase(); vb = getCustomerDisplayName(b).toLowerCase(); break;
+      case 'qty':      va = a.qty||0;                                vb = b.qty||0; break;
+      case 'sellPc':   va = a.sellPc||0;                             vb = b.sellPc||0; break;
+      case 'status':   va = (a.status||'').toLowerCase();            vb = (b.status||'').toLowerCase(); break;
+      default:         va = a.date||'';                              vb = b.date||''; // 'date'
+    }
+    if (va < vb) return -histSortDir;
+    if (va > vb) return histSortDir;
+    return 0;
+  });
+
+  // Update sort arrow indicators
+  ['pn','customer','qty','sellPc','date','status'].forEach(col => {
+    const th = document.getElementById('th-'+col);
+    const sa = document.getElementById('sa-'+col);
+    if (!th || !sa) return;
+    th.classList.toggle('sorted', histSortCol === col);
+    sa.textContent = histSortCol === col ? (histSortDir === 1 ? '▲' : '▼') : '↕';
+  });
+
+  document.getElementById('hist-count').textContent = filtered.length+' jobs';
+
+  document.getElementById('hist-tbody').innerHTML = filtered.map(r => {
+    const estHrs = totalEstHrs(r);
+    const actHrs = totalActHrs(r);
+    const variance = (estHrs > 0 && actHrs > 0) ? actHrs - estHrs : null;
+    const varHtml = variance !== null
+      ? `<span class="variance ${variance>0?'over':'under'}">${variance>0?'+':''}${variance.toFixed(1)}</span>` : '';
+    const custName = getCustomerDisplayName(r);
+    const custCell = r.customerId
+      ? `<span class="td-cust-link" onclick="event.stopPropagation();jumpToCustomer('${r.customerId}')">${esc(custName)}</span>`
+      : esc(custName);
+    return `
+      <tr onclick="loadJob(${r.id})" title="Click to open this quote">
+        <td><div class="td-pn">${esc(r.pn)}${r.rev && r.rev !== 'A' ? `<span style="font-size:13px;color:var(--steel);font-weight:400;margin-left:8px">REV ${esc(r.rev)}</span>` : ''}</div><div class="td-desc">${esc(r.desc||'')}${r.jobNumber ? `<span style="color:var(--dim);font-size:12px;margin-left:6px">#${esc(r.jobNumber)}</span>` : ''}</div></td>
+        <td>${custCell}</td>
+        <td class="num">${r.qty||1}</td>
+        <td class="num">$${(r.sellPc||0).toFixed(2)}</td>
+        <td class="num">${estHrs > 0 ? estHrs.toFixed(1) : '—'}</td>
+        <td class="num">${actHrs > 0 ? actHrs.toFixed(1)+varHtml : '<span style="color:var(--dim)">—</span>'}</td>
+        <td class="num" style="color:var(--muted);font-size:13px">${r.date||''}</td>
+        <td><span class="badge badge-${(r.status||'pending').toLowerCase()}">${r.status||'PENDING'}</span></td>
+        <td><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();deleteJob(${r.id})" title="Delete">✕</button></td>
+      </tr>`;
+  }).join('');
+}
+
+function filterHistory(q) { histSearch = q.toLowerCase(); buildHistory(); }
+function setHistFilter(f, btn) {
+  histFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildHistory();
+}
+function sortHistory(col) {
+  if (histSortCol === col) {
+    histSortDir *= -1;
+  } else {
+    histSortCol = col;
+    histSortDir = col === 'date' ? -1 : 1; // date defaults newest-first; others ascending
+  }
+  buildHistory();
+}
+
+function totalEstHrs(job) {
+  let total = 0;
+  const qty = job.qty || 1;
+  TIME_OPS.forEach(op => {
+    const t = job.times?.[op.key];
+    if (!t) return;
+    const mins = t.est || 0;
+    const isPerJob = op.hasBasis ? (job.packHandleLot || false) : op.perJob;
+    total += isPerJob ? (mins / qty) / 60 : mins / 60;
+  });
+  return total;
+}
+
+function totalActHrs(job) {
+  let total = 0, hasAny = false;
+  const qty = job.qty || 1;
+  TIME_OPS.forEach(op => {
+    const t = job.times?.[op.key];
+    if (!t || t.act == null) return;
+    hasAny = true;
+    const isPerJob = op.hasBasis ? (job.packHandleLot || false) : op.perJob;
+    total += isPerJob ? (t.act / qty) / 60 : t.act / 60;
+  });
+  return hasAny ? total : 0;
+}
+
+function deleteJob(id) {
+  if (!confirm('Delete this quote? This cannot be undone.')) return;
+  jobs = jobs.filter(j => j.id !== id);
+  if (currentJobId === id) { currentJobId = null; }
+  saveJobsToStorage();
+  buildSidebar();
+  buildHistory();
+}
+
+/* ══════════════════════════════════════════════════
+   MATERIALS LIBRARY
+══════════════════════════════════════════════════ */
+function buildMatLibrary() {
+  const derived = {};
+  jobs.forEach(job => {
+    const mk = job.mat?.key;
+    if (!mk || !job.mat?.cplb) return;
+    if (!derived[mk] || (job.date || '') > (derived[mk].date || '')) {
+      derived[mk] = {price: job.mat.cplb, date: job.date, supplier: job.mat.supplier, lead: job.mat.lead};
+    }
+  });
+
+  document.getElementById('mat-lib-tbody').innerHTML = MAT_DISPLAY_ORDER.map(m => {
+    const ref        = COMMODITY_REF[m.key];
+    const override   = matOverrides[m.key] || {};
+    const der        = derived[m.key] || {};
+    const yourPrice  = override.price || der.price || null;
+    const lastUsed   = der.price || null;
+    const lastDate   = der.date  || null;
+    const supplier   = override.supplier || der.supplier || '';
+    const lead       = override.lead     || der.lead     || '';
+    const stockType  = override.stockType || '';
+    const dim        = override.stockDimension || override.customDimension || '';
+    const barLen     = override.barLength || override.customBarLength || '';
+    const priceUnit  = stockUnit(stockType);
+    const pLabel     = priceUnit === 'lb' ? '/lb' : '/'+priceUnit;
+    return `
+      <tr>
+        <td><div class="mat-lib-name">${ref?.name || m.key} ${spotBadgeHtml(m.key)}</div><div class="mat-lib-spec">${m.spec}</div></td>
+        <td>
+          <select class="mat-lib-select" onchange="saveMatOverrideField('${m.key}','stockType',this.value);buildMatLibrary()">
+            <option value="">--</option>
+            ${STOCK_TYPES.map(t=>`<option${t===stockType?' selected':''}>${esc(t)}</option>`).join('')}
+          </select>
+        </td>
+        <td><input type="text" class="mat-lib-text-input" value="${esc(dim)}" placeholder='e.g. 1"'
+          onchange="saveMatOverrideField('${m.key}','stockDimension',this.value)"></td>
+        <td><input type="text" class="mat-lib-text-input" value="${esc(barLen)}" placeholder="12ft"
+          style="${BAR_FORM_TYPES.has(stockType)?'':'opacity:.3'}"
+          onchange="saveMatOverrideField('${m.key}','barLength',this.value)"></td>
+        <td class="num">
+          <div style="font-size:10px;color:var(--dim);text-align:right;margin-bottom:2px">${pLabel}</div>
+          <input type="number" class="mat-lib-input" value="${yourPrice ? yourPrice.toFixed(2) : ''}"
+            placeholder="${ref?.ref ? ref.ref.toFixed(2) : '0.00'}" step="0.01" min="0"
+            onchange="saveMatOverrideField('${m.key}','price',this.value)">
+        </td>
+        <td class="num"><div class="mat-lib-last">${lastUsed ? '$'+lastUsed.toFixed(2)+pLabel : '—'}</div></td>
+        <td class="num"><div class="mat-lib-last-date">${lastDate || '—'}</div></td>
+        <td><input type="text" class="mat-lib-text-input" value="${esc(supplier)}"
+          placeholder="Supplier" onchange="saveMatOverrideField('${m.key}','supplier',this.value)"></td>
+        <td><input type="text" class="mat-lib-text-input" value="${esc(lead)}"
+          placeholder="Lead time" onchange="saveMatOverrideField('${m.key}','lead',this.value)"></td>
+      </tr>`;
+  }).join('');
+}
+
+function saveMatOverrideField(key, field, val) {
+  if (!matOverrides[key]) matOverrides[key] = {};
+  matOverrides[key][field] = field === 'price' ? (parseFloat(val)||0) : val;
+  saveMatOverrides();
+}
+
+/* ══════════════════════════════════════════════════
+   SETTINGS
+══════════════════════════════════════════════════ */
+function applySettings() {
+  document.getElementById('set-shopname').value    = settings.shopName || '';
+  document.getElementById('set-phone').value       = settings.phone || '';
+  document.getElementById('set-email').value       = settings.email || '';
+  document.getElementById('set-job-prefix').value  = settings.jobNumPrefix || '';
+  document.getElementById('set-rate').value        = settings.rate || 125;
+  document.getElementById('set-margin').value      = settings.defaultMargin ?? 40;
+  document.getElementById('set-mat-markup').value  = settings.defaultMatMarkup ?? 20;
+  document.getElementById('set-op-markup').value   = settings.defaultOpMarkup ?? 0;
+  document.getElementById('set-overhead').value    = settings.defaultOverhead ?? 0;
+  document.getElementById('rate-display').textContent    = '$'+(settings.rate||125);
+  document.getElementById('display-rate').textContent    = '$'+(settings.rate||125)+'/hr';
+  document.getElementById('topbar-shopname').textContent = settings.shopName || 'Your Shop';
+  document.getElementById('note-rate').textContent       = '$'+(settings.rate||125)+'/hr';
+  document.getElementById('margin-input').value          = settings.defaultMargin ?? 40;
+  buildMachineList();
+  buildRiskWeightSettings();
+}
+
+function applySettingsLive() {
+  const name       = document.getElementById('set-shopname').value;
+  const phone      = document.getElementById('set-phone').value;
+  const email      = document.getElementById('set-email').value;
+  const jobNumPrefix = document.getElementById('set-job-prefix').value;
+  const rate       = parseFloat(document.getElementById('set-rate').value)||125;
+  const margin     = parseFloat(document.getElementById('set-margin').value)||40;
+  const matMarkup  = parseFloat(document.getElementById('set-mat-markup').value)||0;
+  const opMarkup   = parseFloat(document.getElementById('set-op-markup').value)||0;
+  const overhead   = parseFloat(document.getElementById('set-overhead').value)||0;
+  settings = {shopName:name, phone, email, jobNumPrefix, rate, defaultMargin:margin, defaultMatMarkup:matMarkup, defaultOpMarkup:opMarkup, defaultOverhead:overhead, machines: settings.machines||[], riskWeights: settings.riskWeights||{}};
+  document.getElementById('rate-display').textContent    = '$'+rate;
+  document.getElementById('display-rate').textContent    = '$'+rate+'/hr';
+  document.getElementById('topbar-shopname').textContent = name || 'Your Shop';
+  document.getElementById('note-rate').textContent       = '$'+rate+'/hr';
+  document.getElementById('margin-input').value          = margin;
+  document.getElementById('margin-display').textContent  = margin+'% GM';
+  calcAll();
+}
+
+function saveSettingsNow() {
+  applySettingsLive();
+  saveSettingsToStorage();
+  const el = document.getElementById('settings-saved');
+  el.textContent = '✓ Saved';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.textContent='', 3000);
+}
+
+/* ══════════════════════════════════════════════════
+   INCOMPLETE ALERT (v5 — Change 3)
+══════════════════════════════════════════════════ */
+function checkIncomplete(action) {
+  const issues = [];
+
+  // Check material: if a material is selected but cost is blank or zero
+  const matKey  = document.getElementById('mat-select').value;
+  const matCost = parseFloat(document.getElementById('mat-cplb').value) || 0;
+  if (matKey && matCost === 0) {
+    const matName = COMMODITY_REF[matKey]?.name || matKey;
+    issues.push('Material: ' + matName + ' — no price entered');
+  }
+
+  // Check outside process rows: any row with a process selected but cost = 0
+  document.querySelectorAll('#op-tbody tr').forEach(row => {
+    const sel  = row.querySelector('select');
+    const costInp = row.querySelector('input[type=number]');
+    const cost = parseFloat(costInp?.value) || 0;
+    if (sel && cost === 0) {
+      issues.push('Outside Process: ' + (sel.value || 'unnamed') + ' — no price entered');
+    }
+  });
+
+  if (!issues.length) { action(); return; }
+
+  _pendingSaveAction = action;
+  document.getElementById('incomplete-list').innerHTML =
+    issues.map(i => `<li>${esc(i)}</li>`).join('');
+  document.getElementById('incomplete-modal').classList.add('show');
+}
+
+function incompleteGoFix() {
+  document.getElementById('incomplete-modal').classList.remove('show');
+  _pendingSaveAction = null;
+  // Scroll to and highlight the first empty field
+  const matKey  = document.getElementById('mat-select').value;
+  const matCost = parseFloat(document.getElementById('mat-cplb').value) || 0;
+  if (matKey && matCost === 0) {
+    const el = document.getElementById('mat-cplb');
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.focus();
+    el.style.borderColor = 'var(--amber)';
+    setTimeout(() => el.style.borderColor = '', 2200);
+    return;
+  }
+  let fixed = false;
+  document.querySelectorAll('#op-tbody tr').forEach(row => {
+    if (fixed) return;
+    const costInp = row.querySelector('input[type=number]');
+    if ((parseFloat(costInp?.value)||0) === 0) {
+      fixed = true;
+      costInp.scrollIntoView({behavior:'smooth', block:'center'});
+      costInp.focus();
+      costInp.style.borderColor = 'var(--amber)';
+      setTimeout(() => costInp.style.borderColor = '', 2200);
+    }
+  });
+}
+
+function incompleteProceed() {
+  const fn = _pendingSaveAction;
+  _pendingSaveAction = null;
+  document.getElementById('incomplete-modal').classList.remove('show');
+  if (fn) fn();
+}
+
+/* ══════════════════════════════════════════════════
+   HIGHLIGHT HELPER (v5 — Change 4)
+══════════════════════════════════════════════════ */
+function hlMatch(text, query) {
+  if (!query || !text) return esc(text || '');
+  const idx = (text+'').toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return esc(text);
+  const t = text + '';
+  return esc(t.slice(0, idx)) +
+    `<mark style="background:rgba(232,160,32,.25);color:var(--amber);font-style:normal">${esc(t.slice(idx, idx + query.length))}</mark>` +
+    esc(t.slice(idx + query.length));
+}
+
+/* ══════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════ */
+function todayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ══════════════════════════════════════════════════
+   NRE
+══════════════════════════════════════════════════ */
+function toggleNre(forceOpen) {
+  _nreOpen = forceOpen !== undefined ? !!forceOpen : !_nreOpen;
+  document.getElementById('nre-section').style.display = _nreOpen ? '' : 'none';
+  document.getElementById('nre-toggle').textContent    = _nreOpen ? '− Remove NRE' : '+ Add NRE';
+  if (!_nreOpen) {
+    ['nre-engineering','nre-tooling','nre-fixtures','nre-other'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const chk = document.getElementById('nre-separate');
+    if (chk) chk.checked = false;
+    calcAll();
+  }
+}
+
+function getNreTotal() {
+  if (!_nreOpen) return 0;
+  return ['nre-engineering','nre-tooling','nre-fixtures','nre-other']
+    .reduce((sum, id) => sum + (parseFloat(document.getElementById(id)?.value)||0), 0);
+}
+
+function getNreSeparate() {
+  const chk = document.getElementById('nre-separate');
+  return chk ? chk.checked : false;
+}
+
+/* ══════════════════════════════════════════════════
+   JOB NUMBERS + RE-QUOTE
+══════════════════════════════════════════════════ */
+function nextJobNumber() {
+  jobCounter++;
+  try { localStorage.setItem('cs_job_counter', jobCounter); } catch(e) {}
+  return (settings.jobNumPrefix || '') + jobCounter;
+}
+
+function reQuote() {
+  if (!currentJobId) return;
+  const job = jobs.find(j => j.id === currentJobId);
+  if (!job) return;
+  const prevRev = job.rev || 'A';
+  const newRev  = incRevision(prevRev);
+  currentJobId  = null;
+  document.getElementById('rev-input').value         = newRev;
+  document.getElementById('job-number-input').value  = nextJobNumber();
+  document.getElementById('btn-requote').style.display = 'none';
+  document.querySelectorAll('.job-item').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById('save-confirm');
+  el.textContent = `Re-quoting ${job.pn} · REV ${prevRev} → ${newRev}`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.textContent='', 5000);
+  scheduleAutoSave();
+}
+
+function incRevision(rev) {
+  if (!rev) return 'B';
+  if (/^[A-Z]$/.test(rev) && rev !== 'Z') return String.fromCharCode(rev.charCodeAt(0) + 1);
+  if (/^\d+$/.test(rev)) return String(parseInt(rev) + 1);
+  return rev + '-2';
+}
+
+function exportAllData() {
+  const keys = ['cs_jobs','cs_settings','cs_matlib','cs_customers','cs_suppliers','cs_vendors','cs_job_counter'];
+  const payload = { _version: 6, _exported: new Date().toISOString() };
+  keys.forEach(k => { const v = localStorage.getItem(k); if (v !== null) payload[k] = JSON.parse(v); });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  a.download = `cutsheet-backup-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importAllData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const payload = JSON.parse(e.target.result);
+      const keys = ['cs_jobs','cs_settings','cs_matlib','cs_customers','cs_suppliers','cs_vendors','cs_job_counter'];
+      keys.forEach(k => { if (payload[k] !== undefined) localStorage.setItem(k, JSON.stringify(payload[k])); });
+      localStorage.removeItem('cs_seeded');
+      localStorage.removeItem('cs_cust_seeded');
+      const status = document.getElementById('import-status');
+      status.textContent = 'Import successful — reloading…';
+      setTimeout(() => location.reload(), 1200);
+    } catch(err) {
+      alert('Import failed: could not parse file. Make sure it is a valid CutSheet backup.');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+</script>
+</body>
+</html>
