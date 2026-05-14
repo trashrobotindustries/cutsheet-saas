@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0b1017;
+  --surf: #131c27;
+  --surf-hi: #1a2535;
+  --surf-top: #1f2d40;
+  --border: #253040;
+  --border-hi: #344560;
+  --steel: #5c8fb5;
+  --steel-dim: #3a6080;
+  --steel-bright: #80b8e0;
+  --amber: #e8a020;
+  --amber-dim: #9a6c10;
+  --amber-bright: #f5c050;
+  --text: #ccd6e0;
+  --muted: #7a8ea4;
+  --dim: #445566;
+  --green: #3cb870;
+  --red: #cc4444;
+  --yellow: #d4b840;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-dm-mono), 'DM Mono', monospace;
+  font-size: 16px;
+  line-height: 1.4;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+input, select, textarea {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-dm-mono), 'DM Mono', monospace;
+  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color .15s;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+input:focus, select:focus, textarea:focus {
+  border-color: var(--steel);
+  background: var(--surf-hi);
 }
+
+input[type=number] { text-align: right; }
+select option { background: var(--surf-hi); }
+textarea { resize: vertical; }
