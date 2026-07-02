@@ -1,0 +1,13 @@
+{
+  "name": "figure8-derby",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multiplayer figure-8 demolition-derby racer — last truck running wins.",
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes serve -l 5173 .",
+    "start": "npx --yes serve -l 5173 ."
+  },
+  "keywords": ["game", "threejs", "racing", "demolition-derby", "webgl"],
+  "license": "UNLICENSED"
+}
