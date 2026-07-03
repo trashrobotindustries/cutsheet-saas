@@ -1,0 +1,21 @@
+# Netlify config for Figure-8 Derby.
+# The game is 100% static (no build step) — Netlify just serves this folder.
+#
+# Deploying from Git (this repo): set Netlify's "Base directory" to figure8-derby
+# and leave the build command empty. publish="." below is relative to that base.
+# If you extract this folder into its own repo, no base directory is needed.
+
+[build]
+  publish = "."
+  command = ""
+
+# Long-cache the vendored engine (it never changes); always revalidate the app shell.
+[[headers]]
+  for = "/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
