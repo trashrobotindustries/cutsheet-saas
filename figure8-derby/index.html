@@ -57,14 +57,21 @@
   /* Touch controls */
   #touch { position: absolute; inset: 0; display: none; }
   .pad {
-    position: absolute; bottom: 26px; width: 84px; height: 84px; border-radius: 50%;
+    position: absolute; bottom: 26px; width: 72px; height: 72px; border-radius: 50%;
     background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.4);
-    color: #fff; font-size: 30px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 28px; font-weight: 900; display: flex; align-items: center; justify-content: center;
     user-select: none; -webkit-user-select: none; touch-action: none;
   }
-  .pad:active { background: rgba(255,255,255,.4); }
-  #btn-left { left: 26px; } #btn-right { left: 124px; }
-  #btn-brake { right: 124px; } #btn-gas { right: 26px; height: 104px; border-radius: 42px; }
+  .pad:active { background: rgba(255,255,255,.45); }
+  /* Two clusters anchored to the corners; sized so they never collide on narrow phones. */
+  #btn-left { left: 16px; } #btn-right { left: 96px; }
+  #btn-brake { right: 96px; } #btn-gas { right: 16px; height: 92px; border-radius: 36px; }
+  /* Roomier layout once there's horizontal space (tablets / landscape). */
+  @media (min-width: 560px) {
+    .pad { width: 84px; height: 84px; font-size: 30px; }
+    #btn-left { left: 26px; } #btn-right { left: 124px; }
+    #btn-brake { right: 124px; } #btn-gas { right: 26px; height: 104px; border-radius: 42px; }
+  }
 </style>
 </head>
 <body>
